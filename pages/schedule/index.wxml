@@ -35,8 +35,8 @@
         <input class="form-input" placeholder="标签(可选)" value="{{formLabel}}" bindinput="onLabelInput" />
       </view>
       <view class="form-actions">
-        <view class="form-btn form-btn-ghost" bindtap="cancelAdd" style="flex:1;">取消</view>
-        <view class="form-btn form-btn-primary" bindtap="saveTemplate" style="flex:1;">保存</view>
+        <view class="form-btn form-btn-ghost" bindtap="cancelAdd">取消</view>
+        <view class="form-btn form-btn-primary" bindtap="saveTemplate">保存</view>
       </view>
     </view>
 

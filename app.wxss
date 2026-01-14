@@ -2,24 +2,24 @@
 @import "./styles/theme.wxss";
 
 page {
-  background: linear-gradient(180deg,#FFE7DE 0%,#FFF1D2 26%,#F3FFE7 58%,#EAF2FF 100%);
-  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #FFE7E0 0%, #FFF3D6 35%, #EFFFF0 70%, #EAF6FF 100%);
+  padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 }
 
 .app-bg {
   min-height: 100vh;
   background: transparent;
   position: relative;
-  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 }
 
 .page-container {
   position: relative;
   z-index: 1;
   padding: 0 24rpx;
-  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 }
 
 .list-bottom-spacer {
-  height: calc(140rpx + env(safe-area-inset-bottom));
+  height: calc(116rpx + env(safe-area-inset-bottom));
 }

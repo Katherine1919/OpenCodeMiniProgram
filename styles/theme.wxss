@@ -3,7 +3,7 @@
 .theme-card {
   background: rgba(255,255,255,0.90);
   border-radius: 28rpx;
-  box-shadow: 0 16rpx 34rpx rgba(0,0,0,0.06);
+  box-shadow: 0 10rpx 30rpx rgba(60,60,60,0.08);
   padding: 26rpx;
   margin-bottom: 18rpx;
 }
@@ -17,7 +17,7 @@
   font-size: 30rpx;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 16rpx 34rpx rgba(247,185,107,0.28);
+  box-shadow: 0 10rpx 30rpx rgba(60,60,60,0.08);
   border: none;
   padding: 0;
   margin: 0;
@@ -40,7 +40,7 @@
 }
 
 .custom-header-title {
-  font-size: 34rpx;
+  font-size: 44rpx;
   font-weight: 700;
   color: rgba(43,43,43,0.88);
 }
