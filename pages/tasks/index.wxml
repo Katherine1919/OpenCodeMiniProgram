@@ -1,0 +1,88 @@
+<view class="app-bg">
+  <view class="page-container">
+    <view class="hero glass-card mb-4">
+      <text class="text-title">任务池</text>
+      <text class="text-helper text-muted mt-1" style="display:block;">把要做的事放进来</text>
+    </view>
+
+    <view class="add-card glass-card mb-4">
+      <input class="task-input" placeholder="例如：备课材料整理" value="{{newTask.title}}" bindinput="onTitleInput" />
+      
+      <view class="seg mt-3">
+        <view class="seg-item {{newTask.category === '工作' ? 'seg-on' : ''}}" bindtap="selectCategory" data-cat="工作">工作</view>
+        <view class="seg-item {{newTask.category === '学习' ? 'seg-on' : ''}}" bindtap="selectCategory" data-cat="学习">学习</view>
+        <view class="seg-item {{newTask.category === '生活' ? 'seg-on' : ''}}" bindtap="selectCategory" data-cat="生活">生活</view>
+      </view>
+
+      <view class="minutes-section mt-3" wx:if="{{!newTask.isFixed}}">
+        <view class="seg">
+          <view class="seg-item {{selectedMinutes === 15 ? 'seg-on' : ''}}" bindtap="selectMinutes" data-min="15">15分钟</view>
+          <view class="seg-item {{selectedMinutes === 30 ? 'seg-on' : ''}}" bindtap="selectMinutes" data-min="30">30分钟</view>
+          <view class="seg-item {{selectedMinutes === 60 ? 'seg-on' : ''}}" bindtap="selectMinutes" data-min="60">60分钟</view>
+        </view>
+        <input class="custom-input mt-2" type="number" placeholder="自定义分钟(5-480)" value="{{customMinutes}}" bindinput="onCustomMinutesInput" />
+      </view>
+
+      <view class="row mt-3">
+        <text class="text-helper text-muted">DDL：</text>
+        <picker mode="date" value="{{newTask.ddl}}" bindchange="onDdlChange">
+          <view class="chip">{{newTask.ddl || '无'}}</view>
+        </picker>
+      </view>
+
+      <view class="seg mt-3">
+        <view class="seg-item {{newTask.priority === 'high' ? 'seg-on' : ''}}" bindtap="selectPriority" data-pri="high">高优先</view>
+        <view class="seg-item {{newTask.priority === 'mid' ? 'seg-on' : ''}}" bindtap="selectPriority" data-pri="mid">中优先</view>
+        <view class="seg-item {{newTask.priority === 'low' ? 'seg-on' : ''}}" bindtap="selectPriority" data-pri="low">低优先</view>
+      </view>
+
+      <view class="row mt-3">
+        <text class="text-body">固定任务</text>
+        <switch checked="{{newTask.isFixed}}" bindchange="toggleFixed" color="#F7C86A" />
+      </view>
+
+      <view wx:if="{{newTask.isFixed}}" class="fixed-section mt-3">
+        <view class="row mb-2">
+          <input class="time-input" type="text" placeholder="如 0800" value="{{rawStartTime}}" bindinput="onStartTimeInput" bindblur="onStartTimeBlur" />
+          <input class="time-input" type="text" placeholder="如 1230" value="{{rawEndTime}}" bindinput="onEndTimeInput" bindblur="onEndTimeBlur" />
+        </view>
+        <view class="seg">
+          <view class="seg-item {{newTask.repeatRule === null ? 'seg-on' : ''}}" bindtap="selectRepeat" data-rule="null">每天</view>
+          <view class="seg-item {{newTask.repeatRule === 'weekly' ? 'seg-on' : ''}}" bindtap="selectRepeat" data-rule="weekly">每周</view>
+          <view class="seg-item {{newTask.repeatRule === 'biweekly' ? 'seg-on' : ''}}" bindtap="selectRepeat" data-rule="biweekly">每两周</view>
+          <view class="seg-item {{newTask.repeatRule === 'monthly' ? 'seg-on' : ''}}" bindtap="selectRepeat" data-rule="monthly">每月</view>
+        </view>
+      </view>
+
+      <view class="pill pill-primary mt-4" bindtap="addTask" style="width:100%;">加入任务池</view>
+    </view>
+
+    <view class="filter-tabs mb-3">
+      <view class="chip {{filterTab === 'today' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="today">今日</view>
+      <view class="chip {{filterTab === 'scheduled' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="scheduled">已排</view>
+      <view class="chip {{filterTab === 'done' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="done">完成</view>
+      <view class="chip {{filterTab === 'not_done' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="not_done">未完</view>
+      <view class="chip {{filterTab === 'overflow' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="overflow">溢出</view>
+    </view>
+
+    <view class="task-list">
+      <view wx:for="{{filteredTasks}}" wx:key="id" class="task-item glass-card">
+        <view class="task-content">
+          <text class="text-body">{{item.title}}</text>
+          <text class="text-helper text-muted mt-1" style="display:block;">
+            {{item.category}} · 
+            <text wx:if="{{item.isFixed}}">{{item.startTime}}–{{item.endTime}}</text>
+            <text wx:else>{{item.minutes}}分钟</text>
+            · {{item.priority === 'high' ? '高' : item.priority === 'mid' || item.priority === 'medium' ? '中' : '低'}}优先
+            <text wx:if="{{item.isFixed}}"> · 固定</text>
+          </text>
+        </view>
+        <view class="pill-mini" bindtap="deleteTask" data-id="{{item.id}}">移除</view>
+      </view>
+    </view>
+
+    <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card">
+      <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
+    </view>
+  </view>
+</view>

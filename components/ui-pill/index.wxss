@@ -1,0 +1,22 @@
+.ui-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  background: var(--glassStrong);
+  border-radius: var(--rPill);
+  font-size: var(--sub);
+  color: var(--ink2);
+  border: 1rpx solid rgba(255,255,255,.45);
+  transition: all 240ms ease-out;
+}
+
+.ui-pill.active {
+  background: linear-gradient(135deg, var(--sun1), var(--sun2));
+  color: var(--ink0);
+  border-color: transparent;
+}
+
+.ui-pill.small {
+  padding: 4rpx 14rpx;
+  font-size: 20rpx;
+}

@@ -1,0 +1,25 @@
+修复完成检查清单:
+
+✅ 1. utils/time.js - 时间输入规范化工具
+✅ 2. utils/scheduler.js - 修复 shouldShowFixed (repeatRule null 支持) + generateSchedule 冲突/模板外/非法检测
+✅ 3. utils/store.js - 字段统一 (minutes/isFixed/startTime/endTime/repeatRule) + priority medium->mid + 时间验证
+✅ 4. pages/schedule/index.js - 手动时间输入 + 固定任务候选逻辑 + 冲突提示
+✅ 5. pages/schedule/index.wxml - 手动输入框 + 冲突/超模板/非法标签
+✅ 6. pages/schedule/index.wxss - 日系暖色样式
+✅ 7. pages/tasks/index.js - 手动时间输入 + 时间验证 + minutes计算
+✅ 8. pages/tasks/index.wxml - 手动输入框 + 固定任务时间段显示
+✅ 9. pages/tasks/index.wxss - 日系暖色样式
+✅ 10. app.wxss - 日系暖色全局样式
+✅ 11. styles/tokens.wxss - 设计令牌
+✅ 12. custom-tab-bar/index.wxss - 轻量化高亮
+✅ 13. utils/scheduler.debug.js - 8个测试用例
+✅ 14. assets/icons/README.txt - 图标清单
+
+核心修复点:
+- shouldShowFixed: repeatRule null/undefined 现在返回 true (默认每天显示)
+- generateSchedule: 固定任务冲突/模板外/非法都返回标记, 不会 silently drop
+- store.addTask/updateTask: 时间范围验证, minutes 自动计算
+- 手动时间输入: 支持 0800/08:00/8:0 等格式自动规范化
+- UI 风格: 暖色渐变 + 半透明玻璃 + 轻柔阴影
+
+

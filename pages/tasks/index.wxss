@@ -1,0 +1,77 @@
+.hero {
+  padding: var(--cardPad);
+}
+
+.add-card {
+  padding: var(--cardPad);
+}
+
+.task-input {
+  background: rgba(61, 53, 48, 0.03);
+  border-radius: 14rpx;
+  padding: 18rpx 22rpx;
+  font-size: 28rpx;
+  width: 100%;
+  border: 1rpx solid rgba(61, 53, 48, 0.06);
+}
+
+.custom-input {
+  background: rgba(61, 53, 48, 0.03);
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+  width: 100%;
+  border: 1rpx solid rgba(61, 53, 48, 0.06);
+}
+
+.time-input {
+  flex: 1;
+  background: rgba(61, 53, 48, 0.03);
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+  border: 1rpx solid rgba(61, 53, 48, 0.06);
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.fixed-section {
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(61, 53, 48, 0.08);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cardGap);
+}
+
+.task-item {
+  padding: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.empty {
+  padding: 80rpx var(--cardPad);
+  text-align: center;
+}

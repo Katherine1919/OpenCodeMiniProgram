@@ -1,0 +1,3 @@
+<view class="ui-progress-ring" style="width: {{size}}rpx; height: {{size}}rpx;">
+  <canvas type="2d" canvas-id="progress-ring" id="progress-ring" style="width: {{size}}rpx; height: {{size}}rpx;"></canvas>
+</view>

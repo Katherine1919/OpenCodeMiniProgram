@@ -1,0 +1,3 @@
+<view class="ui-pill custom-class {{active ? 'active' : ''}} {{small ? 'small' : ''}}">
+  <text>{{text}}</text>
+</view>

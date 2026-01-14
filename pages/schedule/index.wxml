@@ -1,0 +1,72 @@
+<view class="app-bg">
+  <view class="page-container">
+    <view class="hero glass-card mb-4">
+      <text class="text-title">排程</text>
+      <text class="text-helper text-muted mt-1" style="display:block;">把可用时间先放好</text>
+    </view>
+
+    <view class="section-title mb-3">可用时间模板</view>
+    <view class="template-list mb-4">
+      <view wx:for="{{templates}}" wx:key="id" class="template-card glass-card">
+        <view class="template-info">
+          <text class="text-body">{{item.start}} - {{item.end}}</text>
+          <text class="text-helper text-muted">{{item.label}}</text>
+        </view>
+        <view class="template-actions">
+          <view class="pill-mini" bindtap="editTemplate" data-id="{{item.id}}">编辑</view>
+          <view class="pill-mini" bindtap="deleteTemplate" data-id="{{item.id}}">移除</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showAddForm}}" class="form-card glass-card mb-4">
+      <view class="form-row">
+        <input class="form-input" type="text" placeholder="开始时间 (如 0900)" value="{{rawFormStart}}" bindinput="onStartInput" />
+      </view>
+      <view class="form-row">
+        <input class="form-input" type="text" placeholder="结束时间 (如 1200)" value="{{rawFormEnd}}" bindinput="onEndInput" />
+      </view>
+      <view class="form-row">
+        <input class="form-input" placeholder="标签(可选)" value="{{formLabel}}" bindinput="onLabelInput" />
+      </view>
+      <view class="form-actions">
+        <view class="pill pill-ghost" bindtap="cancelAdd" style="flex:1;">取消</view>
+        <view class="pill pill-primary" bindtap="saveTemplate" style="flex:1;">保存</view>
+      </view>
+    </view>
+
+    <view wx:if="{{!showAddForm}}" class="pill pill-ghost mb-4" bindtap="showAdd">添加时间模板</view>
+
+    <view class="cta-section mb-4">
+      <view class="pill pill-primary" bindtap="generateToday" style="width:100%;">生成今日排程</view>
+    </view>
+
+    <view wx:if="{{schedulePreview.length > 0}}">
+      <view class="section-title mb-3">今日排程预览</view>
+      <view class="timeline">
+        <view wx:for="{{schedulePreview}}" wx:key="id" class="timeline-row">
+          <view class="time-col">{{item.start}}</view>
+          <view class="line-col">
+            <view class="timeline-dot"></view>
+            <view wx:if="{{index < schedulePreview.length - 1}}" class="timeline-connector"></view>
+          </view>
+          <view class="task-card glass-card" wx:if="{{item.kind === 'task'}}">
+            <view class="task-header">
+              <text class="text-body">{{item.title}}</text>
+              <view wx:if="{{item.conflict}}" class="status-tag conflict-tag">冲突</view>
+              <view wx:if="{{item.outOfTemplate}}" class="status-tag out-tag">超模板</view>
+              <view wx:if="{{item.invalid}}" class="status-tag error-tag">非法</view>
+            </view>
+            <text class="text-helper text-muted mt-1" style="display:block;">
+              {{item.minutes}}分钟
+              <text wx:if="{{item.isFixed}}"> · 固定</text>
+            </text>
+          </view>
+          <view class="break-card" wx:else>
+            <text class="text-helper text-muted">— 休息 —</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

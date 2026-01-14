@@ -1,0 +1,50 @@
+========================================
+稳定性修复完成清单
+========================================
+
+【1】时间输入框 Delete/Backspace 修复 ✅
+- utils/time.js: parseLooseTime 支持宽松输入
+- pages/tasks/index.js: 
+  * 新增 rawStartTime/rawEndTime 存储原始输入
+  * onInput 只存储原始值，不做格式化
+  * onBlur 时调用 normalizeTimeInput 格式化
+  * 失败时 toast 提示，不覆盖用户输入
+- pages/schedule/index.js: 同样修复
+- 结果: Delete/Backspace 正常工作
+
+【2】排程冲突缓存幽灵问题修复 ✅
+- utils/store.js deleteTask():
+  * 删除任务后遍历所有 dayStates
+  * 过滤掉包含该 taskId 的 scheduleItems
+  * 清理 conflictFixedTaskIds/outOfTemplateFixedTaskIds/invalidFixedTaskIds
+  * 自动保存修改后的 dayStates
+- pages/schedule/index.js loadPreview():
+  * 读取 scheduleItems 后过滤不存在的 taskId
+  * 自愈缓存机制
+  * 不再 toast 历史冲突
+- 结果: 删除任务后不再出现幽灵冲突提示
+
+【3】UI 保持不变 ✅
+- 未修改 app.wxss 全局样式
+- 未修改 styles/tokens.wxss
+- 仅调整状态标签为小 tag (conflict-tag/out-tag/error-tag)
+- 保持原有圆角、阴影、留白风格
+
+【4】固定任务逻辑稳定性 ✅
+- utils/scheduler.js shouldShowFixed():
+  * repeatRule null/undefined 返回 true (每天显示)
+  * createdAt 缺失返回 true
+- generateSchedule():
+  * 固定任务冲突/超模板仍返回并标记
+  * 不会 silently drop
+
+【5】固定任务显示时间段 ✅
+- pages/tasks/index.wxml:
+  * 固定任务显示 {{item.startTime}}–{{item.endTime}}
+- pages/schedule/index.wxml:
+  * 排程预览显示固定任务标记
+
+核心修复原理:
+- 输入框: "宽松输入 + 失焦格式化" 模型
+- 缓存清理: deleteTask 级联清理所有 dayStates
+- 自愈机制: loadPreview 过滤并修复脏数据

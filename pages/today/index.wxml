@@ -1,0 +1,71 @@
+<view class="app-bg">
+  <view class="page-container">
+    <view class="hero glass-card mb-4">
+      <view class="hero-content">
+        <view>
+          <text class="text-title">今日执行台</text>
+          <text class="text-helper text-muted mt-1" style="display:block;">温柔地开始今天</text>
+        </view>
+        <view class="date-pill chip chip-on">{{dateDisplay}}</view>
+      </view>
+    </view>
+
+    <view class="stats-section mb-4">
+      <view class="ring-card glass-card">
+        <canvas type="2d" id="progressCanvas" class="progress-canvas"></canvas>
+        <view class="ring-center">
+          <text class="rate-num">{{completionRate}}%</text>
+          <text class="text-helper text-muted">完成率</text>
+        </view>
+      </view>
+      <view class="mini-cards">
+        <view class="mini-card glass-card">
+          <text class="text-body">{{totalMinutes}}分钟</text>
+          <text class="text-helper text-muted">今日时长</text>
+        </view>
+        <view class="mini-card glass-card">
+          <text class="text-body" style="font-size:24rpx;">{{nextTaskTitle || '今天已经很完整'}}</text>
+          <text class="text-helper text-muted">下一件</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-title mb-3">今日排程</view>
+    <view class="timeline">
+      <view wx:for="{{scheduleItems}}" wx:key="id" class="timeline-row">
+        <view class="time-col">{{item.start}}</view>
+        <view class="line-col">
+          <view class="timeline-dot"></view>
+          <view wx:if="{{index < scheduleItems.length - 1}}" class="timeline-connector"></view>
+        </view>
+        <view class="task-card glass-card" wx:if="{{item.kind === 'task'}}">
+          <view class="task-main">
+            <view class="task-header">
+              <text class="text-body">{{item.title}}</text>
+              <view class="chip status-{{item.status}}">
+                {{item.status === 'done' ? '完成' : item.status === 'not_done' ? '未完' : '待办'}}
+              </view>
+            </view>
+            <text class="text-helper text-muted mt-1" style="display:block;">
+              {{item.minutes}}分钟 · {{item.category}}
+            </text>
+          </view>
+          <view class="task-actions" wx:if="{{item.status !== 'done' && item.status !== 'not_done'}}">
+            <view class="pill-mini" bindtap="completeTask" data-id="{{item.id}}" data-taskid="{{item.taskId}}">完成</view>
+            <view class="pill-mini" bindtap="skipTask" data-id="{{item.id}}">先放下</view>
+          </view>
+          <view wx:if="{{expandedReasonId === item.id}}" class="reason-input mt-3">
+            <input class="reason-field" placeholder="一句话就好：为什么没做成？" value="{{reasonInput}}" bindinput="onReasonInput" />
+            <view class="pill-mini mt-2" bindtap="saveReason" data-id="{{item.id}}" data-taskid="{{item.taskId}}">保存</view>
+          </view>
+          <view wx:if="{{item.showReason}}" class="saved-note mt-2">
+            <text class="text-helper text-muted">已记下：{{item.note}}</text>
+          </view>
+        </view>
+        <view class="break-card" wx:else>
+          <text class="text-helper text-muted">— 休息 {{item.minutes}}分钟 —</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

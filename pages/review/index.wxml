@@ -1,0 +1,42 @@
+<view class="app-bg">
+  <view class="page-container">
+    <view class="hero glass-card mb-4">
+      <text class="text-title">复盘</text>
+      <text class="text-helper text-muted mt-1" style="display:block;">看看今天的收获</text>
+    </view>
+
+    <view class="stats-card glass-card mb-4">
+      <view class="stat-item">
+        <text class="stat-num">{{stats.completionRate}}%</text>
+        <text class="text-helper text-muted">完成率</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.totalMinutes}}</text>
+        <text class="text-helper text-muted">执行分钟</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.availableMinutes}}</text>
+        <text class="text-helper text-muted">可用分钟</text>
+      </view>
+    </view>
+
+    <view class="section-title mb-3">未完成原因</view>
+    <view wx:if="{{notDoneReasons.length > 0}}" class="reasons-list">
+      <view wx:for="{{notDoneReasons}}" wx:key="index" class="reason-item glass-card">
+        <text class="text-body">{{item.title}}</text>
+        <text class="text-helper text-muted mt-1" style="display:block;">{{item.reason}}</text>
+      </view>
+    </view>
+    <view wx:else class="empty glass-card">
+      <text class="text-helper text-muted">今天很完整。没有遗留。</text>
+    </view>
+
+    <view class="section-title mb-3 mt-4">工具</view>
+    <view class="tool-card glass-card" bindtap="exportCSV">
+      <text class="text-body">导出数据 (CSV)</text>
+      <text class="text-helper text-muted">→</text>
+    </view>
+  </view>
+</view>

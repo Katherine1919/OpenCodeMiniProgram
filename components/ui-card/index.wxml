@@ -1,0 +1,5 @@
+<view class="ui-card custom-class">
+  <view class="ui-card-title text-h2" wx:if="{{title}}">{{title}}</view>
+  <view class="ui-card-subtitle text-sub text-muted" wx:if="{{subtitle}}">{{subtitle}}</view>
+  <slot></slot>
+</view>

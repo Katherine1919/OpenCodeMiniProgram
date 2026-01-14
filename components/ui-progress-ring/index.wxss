@@ -1,0 +1,3 @@
+.ui-progress-ring {
+  display: inline-block;
+}

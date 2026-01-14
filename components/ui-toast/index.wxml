@@ -1,0 +1,5 @@
+<view class="ui-toast {{visible ? 'show' : ''}}" wx:if="{{visible}}">
+  <view class="toast-content">
+    <text class="toast-message">{{message}}</text>
+  </view>
+</view>

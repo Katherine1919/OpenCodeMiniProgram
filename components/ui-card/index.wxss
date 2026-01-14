@@ -1,0 +1,15 @@
+.ui-card {
+  background: var(--glass);
+  border: 1rpx solid rgba(255,255,255,.55);
+  border-radius: var(--rCard);
+  box-shadow: var(--shadowSoft);
+  padding: 22rpx;
+}
+
+.ui-card-title {
+  margin-bottom: 8rpx;
+}
+
+.ui-card-subtitle {
+  margin-bottom: 18rpx;
+}

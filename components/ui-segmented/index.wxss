@@ -1,0 +1,23 @@
+.ui-segmented {
+  display: flex;
+  background: var(--glass);
+  border-radius: var(--rPill);
+  padding: 6rpx;
+  gap: 6rpx;
+}
+
+.segmented-item {
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 16rpx;
+  border-radius: var(--rPill);
+  font-size: var(--sub);
+  color: var(--ink2);
+  transition: all 240ms ease-out;
+}
+
+.segmented-item.active {
+  background: var(--glassStrong);
+  color: var(--ink0);
+  font-weight: 500;
+}

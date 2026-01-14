@@ -1,0 +1,29 @@
+.ui-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 240ms ease-out;
+}
+
+.ui-toast.show {
+  opacity: 1;
+}
+
+.toast-content {
+  background: rgba(31, 26, 22, 0.9);
+  padding: 24rpx 32rpx;
+  border-radius: 16rpx;
+  min-width: 200rpx;
+  max-width: 400rpx;
+  backdrop-filter: blur(20rpx);
+}
+
+.toast-message {
+  color: #fff;
+  font-size: var(--body);
+  text-align: center;
+  line-height: 1.4;
+}

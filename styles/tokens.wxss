@@ -1,0 +1,35 @@
+:root {
+  --pageX: 28rpx;
+  --pageTop: 22rpx;
+  --sectionGap: 22rpx;
+  --cardGap: 16rpx;
+  --cardPad: 22rpx;
+  --rowH: 96rpx;
+  
+  --radiusCard: 28rpx;
+  --radiusPill: 999rpx;
+  --radiusBtn: 20rpx;
+  
+  --tabBarH: 120rpx;
+  --safeBottom: env(safe-area-inset-bottom);
+  
+  --shadowSoft: 0 8rpx 28rpx rgba(31, 26, 22, 0.06);
+  --shadowCard: 0 6rpx 24rpx rgba(31, 26, 22, 0.05);
+  --shadowMini: 0 4rpx 16rpx rgba(31, 26, 22, 0.04);
+  
+  --colorWarmWhite: #FFF9F3;
+  --colorGlass: rgba(255, 255, 255, 0.65);
+  --colorBorder: rgba(61, 53, 48, 0.08);
+  --colorTextDeep: rgba(31, 26, 22, 0.88);
+  --colorTextMuted: rgba(31, 26, 22, 0.48);
+  
+  --fontBody: 28rpx;
+  --fontHelper: 24rpx;
+  --lineBody: 1.5;
+  --lineHelper: 1.4;
+  
+  --s2: 8rpx;
+  --s3: 16rpx;
+  --s4: 24rpx;
+  --s8: 64rpx;
+}

@@ -1,0 +1,57 @@
+.hero {
+  padding: var(--cardPad);
+}
+
+.stats-card {
+  padding: var(--s5);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-num {
+  display: block;
+  font-size: var(--fontTitle);
+  font-weight: 700;
+  color: var(--colorGolden);
+  margin-bottom: var(--s1);
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: var(--colorBorder);
+}
+
+.section-title {
+  font-size: var(--fontBody);
+  font-weight: 600;
+  color: var(--colorTextDeep);
+}
+
+.reasons-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cardGap);
+}
+
+.reason-item {
+  padding: var(--s4);
+}
+
+.empty {
+  padding: var(--s8) var(--cardPad);
+  text-align: center;
+}
+
+.tool-card {
+  padding: var(--s4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

@@ -1,0 +1,9 @@
+# 图标占位目录
+
+请将以下图标文件放置在此目录：
+- today.png / today-active.png
+- schedule.png / schedule-active.png  
+- tasks.png / tasks-active.png
+- review.png / review-active.png
+
+推荐尺寸：96x96px (@2x) 或 144x144px (@3x)

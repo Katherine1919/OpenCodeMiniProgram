@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/today/index",
+    "pages/schedule/index",
+    "pages/tasks/index",
+    "pages/review/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFF1E6",
+    "navigationBarTitleText": "OpenCodePlanner",
+    "navigationBarTextStyle": "black"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/today/index",
+        "text": "Today"
+      },
+      {
+        "pagePath": "pages/schedule/index",
+        "text": "Schedule"
+      },
+      {
+        "pagePath": "pages/tasks/index",
+        "text": "Tasks"
+      },
+      {
+        "pagePath": "pages/review/index",
+        "text": "Review"
+      }
+    ]
+  }
+}

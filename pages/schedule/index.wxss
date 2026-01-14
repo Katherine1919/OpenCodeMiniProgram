@@ -1,0 +1,140 @@
+.hero {
+  padding: var(--cardPad);
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cardGap);
+}
+
+.template-card {
+  padding: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.template-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-actions {
+  display: flex;
+  gap: 10rpx;
+}
+
+.form-card {
+  padding: var(--cardPad);
+}
+
+.form-row {
+  margin-bottom: 16rpx;
+}
+
+.form-input {
+  background: rgba(61, 53, 48, 0.03);
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+  width: 100%;
+  border: 1rpx solid rgba(61, 53, 48, 0.06);
+}
+
+.form-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.cta-section {
+  margin: 20rpx 0;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.time-col {
+  width: 90rpx;
+  padding-top: 20rpx;
+  font-size: 22rpx;
+  color: rgba(31, 26, 22, 0.48);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.line-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20rpx;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 10rpx;
+  height: 10rpx;
+  background: rgba(182, 150, 255, 0.35);
+  border-radius: 50%;
+}
+
+.timeline-connector {
+  width: 2rpx;
+  flex: 1;
+  background: rgba(182, 150, 255, 0.15);
+  margin-top: 8rpx;
+}
+
+.task-card {
+  flex: 1;
+  padding: 18rpx;
+  min-height: 100rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.status-tag {
+  padding: 3rpx 10rpx;
+  border-radius: 8rpx;
+  font-size: 18rpx;
+}
+
+.conflict-tag {
+  background: rgba(255, 200, 120, 0.25);
+  color: rgba(31, 26, 22, 0.65);
+}
+
+.out-tag {
+  background: rgba(255, 220, 150, 0.25);
+  color: rgba(31, 26, 22, 0.65);
+}
+
+.error-tag {
+  background: rgba(255, 150, 150, 0.25);
+  color: rgba(31, 26, 22, 0.65);
+}
+
+.break-card {
+  flex: 1;
+  height: 70rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
