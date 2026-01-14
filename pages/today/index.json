@@ -1,4 +1,4 @@
 {
-  "navigationBarTitleText": "今日",
+  "navigationStyle": "custom",
   "usingComponents": {}
 }

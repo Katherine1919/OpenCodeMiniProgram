@@ -1,5 +1,10 @@
-<view class="app-bg">
-  <view class="page-container">
+<view class="app-bg task-page">
+  <view class="custom-header" style="height:{{headerHeight}}px;">
+    <view class="custom-header-inner" style="padding-top:{{statusBarHeight}}px;height:88rpx;">
+      <text class="custom-header-title">任务池</text>
+    </view>
+  </view>
+  <view class="page-container" style="padding-top:{{headerHeight}}px;">
     <view class="hero glass-card mb-4">
       <text class="text-title">任务池</text>
       <text class="text-helper text-muted mt-1" style="display:block;">把要做的事放进来</text>
@@ -54,7 +59,7 @@
         </view>
       </view>
 
-      <view class="pill pill-primary mt-4" bindtap="addTask" style="width:100%;">加入任务池</view>
+      <view class="primary-btn mt-4" bindtap="addTask">{{editingTaskId ? '保存修改' : '加入任务池'}}</view>
     </view>
 
     <view class="filter-tabs mb-3">
@@ -66,7 +71,7 @@
     </view>
 
     <view class="task-list">
-      <view wx:for="{{filteredTasks}}" wx:key="id" class="task-item glass-card">
+      <view wx:for="{{filteredTasks}}" wx:key="id" class="task-item glass-card" bindtap="editTask" data-id="{{item.id}}">
         <view class="task-content">
           <text class="text-body">{{item.title}}</text>
           <text class="text-helper text-muted mt-1" style="display:block;">
@@ -74,15 +79,23 @@
             <text wx:if="{{item.isFixed}}">{{item.startTime}}–{{item.endTime}}</text>
             <text wx:else>{{item.minutes}}分钟</text>
             · {{item.priority === 'high' ? '高' : item.priority === 'mid' || item.priority === 'medium' ? '中' : '低'}}优先
-            <text wx:if="{{item.isFixed}}"> · 固定</text>
+            <text wx:if="{{item.isFixed}}">  · 固定</text>
           </text>
         </view>
-        <view class="pill-mini" bindtap="deleteTask" data-id="{{item.id}}">移除</view>
+        <view class="task-actions">
+          <view class="pill-mini" catchtap="editTask" data-id="{{item.id}}">编辑</view>
+          <view class="pill-mini" catchtap="deleteTask" data-id="{{item.id}}">移除</view>
+        </view>
       </view>
+      <view class="list-bottom-spacer"></view>
     </view>
 
     <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card">
       <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
+    </view>
+
+    <view class="cta-section mb-4">
+      <view class="primary-btn" bindtap="generateToday">生成今日排程</view>
     </view>
   </view>
 </view>

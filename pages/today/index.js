@@ -9,10 +9,17 @@ Page({
     nextTaskTitle: '',
     scheduleItems: [],
     expandedReasonId: null,
-    reasonInput: ''
+    reasonInput: '',
+    statusBarHeight: 0,
+    headerHeight: 0
   },
 
   onLoad() {
+    const systemInfo = wx.getSystemInfoSync();
+    this.setData({
+      statusBarHeight: systemInfo.statusBarHeight,
+      headerHeight: systemInfo.statusBarHeight + 44
+    });
     this.loadData();
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
@@ -29,7 +36,10 @@ Page({
   loadData() {
     const today = new Date();
     const dateDisplay = `${today.getMonth() + 1}月${today.getDate()}日`;
-    const dateStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     const scheduleItems = store.getSchedule(dateStr);
     const tasks = store.getTasks();
@@ -112,7 +122,11 @@ Page({
 
   completeTask(e) {
     const { id, taskid } = e.currentTarget.dataset;
-    const dateStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     store.updateTask(taskid, { status: 'done' });
     
@@ -138,7 +152,11 @@ Page({
   saveReason(e) {
     const { id, taskid } = e.currentTarget.dataset;
     const { reasonInput } = this.data;
-    const dateStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     store.updateTask(taskid, { status: 'overflow' });
     

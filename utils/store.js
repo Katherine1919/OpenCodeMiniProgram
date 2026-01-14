@@ -219,35 +219,24 @@ class Store {
     this.saveTasks(filtered);
     
     const dayStates = this.getDayStates();
-    let modified = false;
     
     for (const dateStr in dayStates) {
       const dayState = dayStates[dateStr];
       
       if (dayState.scheduleItems) {
-        const originalLength = dayState.scheduleItems.length;
         dayState.scheduleItems = dayState.scheduleItems.filter(item => item.taskId !== taskId);
-        if (dayState.scheduleItems.length !== originalLength) {
-          modified = true;
-        }
       }
       
       if (dayState.conflictFixedTaskIds) {
         dayState.conflictFixedTaskIds = dayState.conflictFixedTaskIds.filter(id => id !== taskId);
       }
       
-      if (dayState.outOfTemplateFixedTaskIds) {
-        dayState.outOfTemplateFixedTaskIds = dayState.outOfTemplateFixedTaskIds.filter(id => id !== taskId);
-      }
-      
-      if (dayState.invalidFixedTaskIds) {
-        dayState.invalidFixedTaskIds = dayState.invalidFixedTaskIds.filter(id => id !== taskId);
+      if (dayState.overflowTaskIds) {
+        dayState.overflowTaskIds = dayState.overflowTaskIds.filter(id => id !== taskId);
       }
     }
     
-    if (modified) {
-      this.saveDayStates(dayStates);
-    }
+    this.saveDayStates(dayStates);
   }
 
   addTimeTemplate(template) {

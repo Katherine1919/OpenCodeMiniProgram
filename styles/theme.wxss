@@ -1,0 +1,46 @@
+/* 主题公共样式 - 卡片与按钮规范 */
+
+.theme-card {
+  background: rgba(255,255,255,0.90);
+  border-radius: 28rpx;
+  box-shadow: 0 16rpx 34rpx rgba(0,0,0,0.06);
+  padding: 26rpx;
+  margin-bottom: 18rpx;
+}
+
+.primary-btn {
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 46rpx;
+  background: #F7B96B;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 16rpx 34rpx rgba(247,185,107,0.28);
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.custom-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.custom-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-header-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: rgba(43,43,43,0.88);
+}

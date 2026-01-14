@@ -7,10 +7,17 @@ Page({
       totalMinutes: 0,
       availableMinutes: 0
     },
-    notDoneReasons: []
+    notDoneReasons: [],
+    statusBarHeight: 0,
+    headerHeight: 0
   },
 
   onLoad() {
+    const systemInfo = wx.getSystemInfoSync();
+    this.setData({
+      statusBarHeight: systemInfo.statusBarHeight,
+      headerHeight: systemInfo.statusBarHeight + 44
+    });
     this.loadData();
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 3 });

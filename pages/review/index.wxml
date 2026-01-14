@@ -1,5 +1,10 @@
-<view class="app-bg">
-  <view class="page-container">
+<view class="app-bg review-page">
+  <view class="custom-header" style="height:{{headerHeight}}px;">
+    <view class="custom-header-inner" style="padding-top:{{statusBarHeight}}px;height:88rpx;">
+      <text class="custom-header-title">复盘</text>
+    </view>
+  </view>
+  <view class="page-container" style="padding-top:{{headerHeight}}px;">
     <view class="hero glass-card mb-4">
       <text class="text-title">复盘</text>
       <text class="text-helper text-muted mt-1" style="display:block;">看看今天的收获</text>

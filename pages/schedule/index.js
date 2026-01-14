@@ -10,10 +10,18 @@ Page({
     editingId: null,
     rawFormStart: '',
     rawFormEnd: '',
-    formLabel: ''
+    formLabel: '',
+    statusBarHeight: 0,
+    headerHeight: 0
   },
 
   onLoad() {
+    const systemInfo = wx.getSystemInfoSync();
+    const menuButton = wx.getMenuButtonBoundingClientRect();
+    this.setData({
+      statusBarHeight: systemInfo.statusBarHeight,
+      headerHeight: systemInfo.statusBarHeight + 44
+    });
     this.loadTemplates();
     this.loadPreview();
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -35,7 +43,11 @@ Page({
   },
 
   loadPreview() {
-    const dateStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     let dayState = store.getDayState(dateStr);
     
     if (dayState && dayState.scheduleItems) {
@@ -175,7 +187,11 @@ Page({
       return;
     }
     
-    const dateStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     // Clear old cache BEFORE generating new schedule
     store.saveDayState(dateStr, { date: dateStr, scheduleItems: [], notDoneReasons: [] });
@@ -183,10 +199,8 @@ Page({
     const result = generateSchedule(candidates, templates, dateStr);
     const { 
       scheduleItems, 
-      overflowTaskIds, 
-      conflictFixedTaskIds, 
-      outOfTemplateFixedTaskIds, 
-      invalidFixedTaskIds 
+      conflictFixedTaskIds,
+      overflowTaskIds
     } = result;
     
     const dayState = {
@@ -210,13 +224,10 @@ Page({
     // Filter conflict IDs to only include tasks that still exist
     const currentTaskIds = tasks.map(t => t.id);
     const actualConflicts = conflictFixedTaskIds.filter(id => currentTaskIds.includes(id));
-    const actualOutOfTemplate = outOfTemplateFixedTaskIds.filter(id => currentTaskIds.includes(id));
-    const actualInvalid = invalidFixedTaskIds.filter(id => currentTaskIds.includes(id));
     
     const warnings = [];
     if (actualConflicts.length > 0) warnings.push(`${actualConflicts.length}个固定任务时间冲突`);
-    if (actualOutOfTemplate.length > 0) warnings.push(`${actualOutOfTemplate.length}个固定任务不在时间模板内`);
-    if (actualInvalid.length > 0) warnings.push(`${actualInvalid.length}个固定任务时间非法`);
+    if (overflowTaskIds.length > 0) warnings.push(`${overflowTaskIds.length}个任务超出可用时间`);
     
     if (warnings.length > 0) {
       wx.showToast({ title: '排程已生成，' + warnings.join('，'), icon: 'none', duration: 3000 });

@@ -1,6 +1,6 @@
 const store = require('../../utils/store');
 const { normalizeTimeInput, validateTimeRange } = require('../../utils/time');
-const { timeToMinutes } = require('../../utils/scheduler');
+const { timeToMinutes, generateSchedule } = require('../../utils/scheduler');
 
 Page({
   data: {
@@ -21,10 +21,18 @@ Page({
     customMinutes: '',
     filterTab: 'today',
     tasks: [],
-    filteredTasks: []
+    filteredTasks: [],
+    statusBarHeight: 0,
+    headerHeight: 0,
+    editingTaskId: null
   },
 
   onLoad() {
+    const systemInfo = wx.getSystemInfoSync();
+    this.setData({
+      statusBarHeight: systemInfo.statusBarHeight,
+      headerHeight: systemInfo.statusBarHeight + 44
+    });
     this.loadTasks();
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 });
@@ -170,7 +178,7 @@ Page({
   },
 
   addTask() {
-    const { newTask } = this.data;
+    const { newTask, editingTaskId } = this.data;
     
     if (!newTask.title.trim()) {
       wx.showToast({ title: '请输入任务标题', icon: 'none' });
@@ -207,11 +215,18 @@ Page({
         repeatRule: newTask.repeatRule
       };
       
-      const result = store.addTask(taskData);
-      
-      if (!result) {
-        wx.showToast({ title: '时间范围不合法，请检查', icon: 'none', duration: 2000 });
-        return;
+      if (editingTaskId) {
+        const result = store.updateTask(editingTaskId, taskData);
+        if (!result) {
+          wx.showToast({ title: '时间范围不合法，请检查', icon: 'none', duration: 2000 });
+          return;
+        }
+      } else {
+        const result = store.addTask(taskData);
+        if (!result) {
+          wx.showToast({ title: '时间范围不合法，请检查', icon: 'none', duration: 2000 });
+          return;
+        }
       }
     } else {
       const taskData = {
@@ -223,8 +238,19 @@ Page({
         isFixed: false
       };
       
-      store.addTask(taskData);
+      if (editingTaskId) {
+        store.updateTask(editingTaskId, taskData);
+      } else {
+        store.addTask(taskData);
+      }
     }
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    store.saveDayState(dateStr, { date: dateStr, scheduleItems: [], notDoneReasons: [] });
     
     this.setData({
       newTask: {
@@ -241,11 +267,12 @@ Page({
       rawStartTime: '',
       rawEndTime: '',
       selectedMinutes: 30,
-      customMinutes: ''
+      customMinutes: '',
+      editingTaskId: null
     });
     
     this.loadTasks();
-    wx.showToast({ title: '已加入任务池', icon: 'success' });
+    wx.showToast({ title: editingTaskId ? '已保存，请重新生成排程' : '已加入任务池', icon: editingTaskId ? 'none' : 'success', duration: 2000 });
   },
 
   selectFilter(e) {
@@ -258,16 +285,135 @@ Page({
     const { id } = e.currentTarget.dataset;
     wx.showModal({
       title: '确认删除',
-      content: '确定删除此任务？',
+      content: '确定删除此任务？删除后今日排程需重新生成。',
       confirmText: '删除',
       cancelText: '取消',
       success: (res) => {
         if (res.confirm) {
           store.deleteTask(id);
+          
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`;
+          store.saveDayState(dateStr, { date: dateStr, scheduleItems: [], notDoneReasons: [] });
+          
           this.loadTasks();
-          wx.showToast({ title: '已删除', icon: 'success' });
+          wx.showToast({ title: '已删除，请重新生成排程', icon: 'none', duration: 2000 });
         }
       }
     });
+  },
+
+  editTask(e) {
+    const { id } = e.currentTarget.dataset;
+    const task = this.data.tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    this.setData({
+      newTask: {
+        title: task.title,
+        category: task.category,
+        minutes: task.minutes || 30,
+        ddl: task.ddl || '',
+        priority: task.priority,
+        isFixed: task.isFixed || false,
+        startTime: task.startTime || '',
+        endTime: task.endTime || '',
+        repeatRule: task.repeatRule || null
+      },
+      rawStartTime: task.startTime || '',
+      rawEndTime: task.endTime || '',
+      selectedMinutes: task.minutes || 30,
+      customMinutes: '',
+      editingTaskId: id
+    });
+    
+    const scrollTop = 0;
+    wx.pageScrollTo({
+      scrollTop: scrollTop,
+      duration: 300
+    });
+  },
+
+  generateToday() {
+    const templates = store.getTimeTemplates();
+    if (templates.length === 0) {
+      wx.showToast({ title: '请先添加时间模板', icon: 'none', duration: 2000 });
+      return;
+    }
+    
+    const tasks = store.getTasks();
+    
+    const fixedCandidates = tasks.filter(t => t.isFixed && t.status !== 'done');
+    const flexibleCandidates = tasks.filter(t => 
+      !t.isFixed && (t.status === 'todo' || t.status === 'scheduled' || t.status === 'overflow')
+    );
+    
+    const candidatesMap = new Map();
+    fixedCandidates.forEach(t => candidatesMap.set(t.id, t));
+    flexibleCandidates.forEach(t => candidatesMap.set(t.id, t));
+    const candidates = Array.from(candidatesMap.values());
+    
+    if (candidates.length === 0) {
+      wx.showToast({ title: '暂无待排任务', icon: 'none', duration: 2000 });
+      return;
+    }
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    // Clear old cache BEFORE generating new schedule
+    store.saveDayState(dateStr, { date: dateStr, scheduleItems: [], notDoneReasons: [] });
+    
+    const result = generateSchedule(candidates, templates, dateStr);
+    const { 
+      scheduleItems, 
+      conflictFixedTaskIds,
+      overflowTaskIds
+    } = result;
+    
+    const dayState = {
+      date: dateStr,
+      scheduleItems,
+      notDoneReasons: []
+    };
+    store.saveDayState(dateStr, dayState);
+    
+    const allTasks = store.getTasks();
+    const updatedTasks = allTasks.map(t => {
+      const scheduled = scheduleItems.find(it => it.taskId === t.id);
+      if (scheduled) return { ...t, status: 'scheduled' };
+      if (overflowTaskIds.includes(t.id)) return { ...t, status: 'overflow' };
+      return t;
+    });
+    store.saveTasks(updatedTasks);
+    
+    this.loadTasks();
+    
+    // Filter conflict IDs to only include tasks that still exist
+    const currentTaskIds = tasks.map(t => t.id);
+    const actualConflicts = conflictFixedTaskIds.filter(id => currentTaskIds.includes(id));
+    
+    const warnings = [];
+    if (actualConflicts.length > 0) warnings.push(`${actualConflicts.length}个固定任务时间冲突`);
+    if (overflowTaskIds.length > 0) warnings.push(`${overflowTaskIds.length}个任务超出可用时间`);
+    
+    if (warnings.length > 0) {
+      wx.showToast({ title: '排程已生成，' + warnings.join('，'), icon: 'none', duration: 3000 });
+    } else {
+      wx.showToast({ title: '排程已生成', icon: 'success', duration: 2000 });
+    }
+    
+    // Navigate to schedule page after generation
+    setTimeout(() => {
+      wx.switchTab({
+        url: '/pages/schedule/index'
+      });
+    }, 2000);
   }
 });

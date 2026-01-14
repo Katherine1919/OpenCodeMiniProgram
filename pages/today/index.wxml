@@ -1,5 +1,10 @@
-<view class="app-bg">
-  <view class="page-container">
+<view class="app-bg today-page">
+  <view class="custom-header" style="height:{{headerHeight}}px;">
+    <view class="custom-header-inner" style="padding-top:{{statusBarHeight}}px;height:88rpx;">
+      <text class="custom-header-title">今日</text>
+    </view>
+  </view>
+  <view class="page-container" style="padding-top:{{headerHeight}}px;">
     <view class="hero glass-card mb-4">
       <view class="hero-content">
         <view>
@@ -31,14 +36,14 @@
     </view>
 
     <view class="section-title mb-3">今日排程</view>
-    <view class="timeline">
-      <view wx:for="{{scheduleItems}}" wx:key="id" class="timeline-row">
+    <view class="timeline today-timeline">
+      <view wx:for="{{scheduleItems}}" wx:key="id" class="timeline-row today-row">
         <view class="time-col">{{item.start}}</view>
-        <view class="line-col">
+        <view class="line-col timeline-col">
           <view class="timeline-dot"></view>
           <view wx:if="{{index < scheduleItems.length - 1}}" class="timeline-connector"></view>
         </view>
-        <view class="task-card glass-card" wx:if="{{item.kind === 'task'}}">
+        <view class="task-card glass-card card" wx:if="{{item.kind === 'task'}}">
           <view class="task-main">
             <view class="task-header">
               <text class="text-body">{{item.title}}</text>
@@ -47,7 +52,7 @@
               </view>
             </view>
             <text class="text-helper text-muted mt-1" style="display:block;">
-              {{item.minutes}}分钟 · {{item.category}}
+              {{item.start}}–{{item.end}} · {{item.minutes}}分钟
             </text>
           </view>
           <view class="task-actions" wx:if="{{item.status !== 'done' && item.status !== 'not_done'}}">
@@ -66,6 +71,7 @@
           <text class="text-helper text-muted">— 休息 {{item.minutes}}分钟 —</text>
         </view>
       </view>
+      <view class="list-bottom-spacer"></view>
     </view>
   </view>
 </view>
