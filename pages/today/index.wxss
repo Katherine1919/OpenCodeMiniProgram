@@ -73,8 +73,8 @@
 
 .today-page .ring-card {
   position: relative;
-  width: 200rpx;
-  height: 200rpx;
+  width: 280rpx;
+  height: 280rpx;
   padding: 0;
   background: rgba(255,255,255,0.92);
   border-radius: 28rpx;
@@ -86,8 +86,8 @@
 }
 
 .today-page .progress-canvas {
-  width: 200rpx;
-  height: 200rpx;
+  width: 280rpx;
+  height: 280rpx;
 }
 
 .today-page .ring-center {

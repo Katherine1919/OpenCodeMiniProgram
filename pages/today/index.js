@@ -88,32 +88,36 @@ Page({
           const canvas = res[0].node;
           const ctx = canvas.getContext('2d');
           const dpr = wx.getSystemInfoSync().pixelRatio;
-          
-          const size = 200;
+
+          const size = 280;
           canvas.width = size * dpr;
           canvas.height = size * dpr;
           ctx.scale(dpr, dpr);
-          
+
           const centerX = size / 2;
           const centerY = size / 2;
-          const radius = 70;
-          
+          const radius = 105;
+
           ctx.clearRect(0, 0, size, size);
-          ctx.lineWidth = 12;
+          ctx.lineWidth = 16;
           ctx.lineCap = 'round';
-          
+
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
           ctx.strokeStyle = 'rgba(61, 53, 48, 0.08)';
           ctx.stroke();
-          
+
           const progress = this.data.completionRate / 100;
           const startAngle = -Math.PI / 2;
           const endAngle = startAngle + progress * 2 * Math.PI;
-          
+
+          const gradient = ctx.createLinearGradient(0, 0, size, size);
+          gradient.addColorStop(0, '#FFB76B');
+          gradient.addColorStop(1, '#FFA726');
+
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-          ctx.strokeStyle = '#F7C86A';
+          ctx.strokeStyle = gradient;
           ctx.stroke();
         }
       });
