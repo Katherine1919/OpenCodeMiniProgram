@@ -189,6 +189,33 @@
   min-width: 0;
 }
 
+.task-page .task-header {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.task-page .issue-tag {
+  height: 44rpx;
+  padding: 8rpx 16rpx 8rpx 16rpx;
+  border-radius: 22rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.task-page .conflict-tag {
+  background: rgba(255, 140, 120, 0.18);
+  color: rgba(150, 40, 20, 0.85);
+}
+
+.task-page .out-template-tag {
+  background: rgba(255, 193, 100, 0.18);
+  color: rgba(140, 80, 20, 0.85);
+}
+
 .task-page .pill-mini {
   padding: 12rpx 20rpx;
   font-size: 26rpx;

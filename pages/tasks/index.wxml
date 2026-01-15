@@ -73,9 +73,13 @@
     <view class="task-list">
       <view wx:for="{{filteredTasks}}" wx:key="id" class="task-item glass-card" bindtap="editTask" data-id="{{item.id}}">
         <view class="task-content">
-          <text class="text-body">{{item.title}}</text>
+          <view class="task-header">
+            <text class="text-body">{{item.title}}</text>
+            <view wx:if="{{item.scheduleIssue === 'conflict'}}" class="issue-tag conflict-tag">冲突</view>
+            <view wx:if="{{item.scheduleIssue === 'out_of_template'}}" class="issue-tag out-template-tag">超出可用时间</view>
+          </view>
           <text class="text-helper text-muted mt-1" style="display:block;">
-            {{item.category}} · 
+            {{item.category}} ·
             <text wx:if="{{item.isFixed}}">{{item.startTime}}–{{item.endTime}}</text>
             <text wx:else>{{item.minutes}}分钟</text>
             · {{item.priority === 'high' ? '高' : item.priority === 'mid' || item.priority === 'medium' ? '中' : '低'}}优先

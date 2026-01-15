@@ -371,44 +371,70 @@ Page({
     store.saveDayState(dateStr, { date: dateStr, scheduleItems: [], notDoneReasons: [] });
     
     const result = generateSchedule(candidates, templates, dateStr);
-    const { 
-      scheduleItems, 
-      conflictFixedTaskIds,
-      overflowTaskIds
+    const {
+      scheduleItems,
+      overflowTaskIds,
+      conflicts,
+      outOfTemplate,
+      conflictTaskIds,
+      outOfTemplateTaskIds
     } = result;
-    
+
     const dayState = {
       date: dateStr,
       scheduleItems,
       notDoneReasons: []
     };
     store.saveDayState(dateStr, dayState);
-    
+
     const allTasks = store.getTasks();
     const updatedTasks = allTasks.map(t => {
       const scheduled = scheduleItems.find(it => it.taskId === t.id);
-      if (scheduled) return { ...t, status: 'scheduled' };
-      if (overflowTaskIds.includes(t.id)) return { ...t, status: 'overflow' };
-      return t;
+      let updatedTask = { ...t };
+      if (scheduled) updatedTask.status = 'scheduled';
+      if (overflowTaskIds.includes(t.id)) updatedTask.status = 'overflow';
+
+      // Clear old scheduleIssue
+      delete updatedTask.scheduleIssue;
+      delete updatedTask.scheduleIssueDetail;
+
+      // Set new scheduleIssue
+      if (conflictTaskIds.has(t.id)) {
+        updatedTask.scheduleIssue = 'conflict';
+      } else if (outOfTemplateTaskIds.has(t.id)) {
+        updatedTask.scheduleIssue = 'out_of_template';
+      }
+
+      return updatedTask;
     });
     store.saveTasks(updatedTasks);
-    
+
     this.loadTasks();
-    
-    // Filter conflict IDs to only include tasks that still exist
-    const currentTaskIds = tasks.map(t => t.id);
-    const actualConflicts = conflictFixedTaskIds.filter(id => currentTaskIds.includes(id));
-    
-    const warnings = [];
-    if (actualConflicts.length > 0) warnings.push(`${actualConflicts.length}个固定任务时间冲突`);
-    if (overflowTaskIds.length > 0) warnings.push(`${overflowTaskIds.length}个任务超出可用时间`);
-    
-    if (warnings.length > 0) {
-      wx.showToast({ title: '排程已生成，' + warnings.join('，'), icon: 'none', duration: 3000 });
+
+    // Construct detailed warning messages
+    const conflictLines = conflicts.slice(0, 6).map(c => `${c.aTitle}(${c.aStart}-${c.aEnd}) ↔ ${c.bTitle}(${c.bStart}-${c.bEnd})`);
+    const outOfTemplateLines = outOfTemplate.slice(0, 6).map(o => `${o.title}(${o.start}-${o.end})`);
+    const allLines = [...conflictLines, ...outOfTemplateLines];
+
+    if (allLines.length > 0) {
+      const title = conflicts.length > 0 && outOfTemplate.length > 0 ? '排程已生成，有冲突和超出模板的任务' :
+                   conflicts.length > 0 ? '排程已生成，有冲突的任务' :
+                   '排程已生成，有超出模板的任务';
+      const content = allLines.join('\n');
+      if (allLines.length <= 3) {
+        wx.showToast({ title: content, icon: 'none', duration: 4000 });
+      } else {
+        wx.showModal({
+          title,
+          content,
+          showCancel: false,
+          confirmText: '知道了'
+        });
+      }
     } else {
       wx.showToast({ title: '排程已生成', icon: 'success', duration: 2000 });
     }
-    
+
     // Navigate to schedule page after generation
     setTimeout(() => {
       wx.switchTab({
