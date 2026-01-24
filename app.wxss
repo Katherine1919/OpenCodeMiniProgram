@@ -1,6 +1,20 @@
 @import "./styles/tokens.wxss";
 @import "./styles/theme.wxss";
 
+/* Global design tokens (fallback if not using CSS variables heavily) */
+:root {
+  --c-primary: #F6B55B;
+  --c-primary-weak: rgba(246,181,91,.18);
+  --c-text: #2C2C2C;
+  --c-muted: rgba(44,44,44,.38);
+  --c-card: rgba(255,255,255,.92);
+  --c-line: rgba(0,0,0,.06);
+}
+
+page {
+  font-family: "PingFang SC", "HarmonyOS Sans SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+
 page {
   background: linear-gradient(180deg, #FFE7E0 0%, #FFF3D6 35%, #EFFFF0 70%, #EAF6FF 100%);
   padding-bottom: calc(116rpx + env(safe-area-inset-bottom));

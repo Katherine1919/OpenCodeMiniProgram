@@ -11,7 +11,10 @@
           <text class="text-title">今日执行台</text>
           <text class="text-helper text-muted mt-1" style="display:block;">温柔地开始今天</text>
         </view>
-        <view class="date-pill chip chip-on">{{dateDisplay}}</view>
+        <view class="date-pill chip date-chip">
+          <image class="date-icon" src="/assets/tab/calendar.svg" />
+          <text>{{dateDisplay}}</text>
+        </view>
       </view>
     </view>
 
