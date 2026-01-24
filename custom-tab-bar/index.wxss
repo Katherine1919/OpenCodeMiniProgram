@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   height: calc(116rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 253, 249, 0.92);
+  background: rgba(255, 253, 249, 1);
   backdrop-filter: blur(18rpx);
   -webkit-backdrop-filter: blur(18rpx);
   border-top: 1rpx solid rgba(0,0,0,0.05);
@@ -60,10 +60,21 @@
 }
 
 .capsule-active {
-  /* keep a subtle shift without large orange block */
+  /* subtle highlighter capsule when selected */
   transform: translateY(-2rpx) scale(1.02);
-  background: transparent;
-  box-shadow: none;
+  background: rgba(246,181,91,.18);
+  border: 1rpx solid rgba(246,181,91,.45);
+  border-radius: 999rpx;
+  box-shadow: 0 2rpx 6rpx rgba(0,0,0,.04);
+}
+
+.tabbar-top-divider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1rpx;
+  background: linear-gradient(to right, transparent, rgba(0,0,0,.04), transparent);
 }
 
 .tab-icon {
