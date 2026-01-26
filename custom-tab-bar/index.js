@@ -2,10 +2,10 @@ Component({
   data: {
     selected: 0,
     list: [
-      { pagePath: '/pages/today/index', text: '今日', icon: '/assets/icons/tab_today.png' },
-      { pagePath: '/pages/schedule/index', text: '排程', icon: '/assets/icons/tab_schedule.png' },
-      { pagePath: '/pages/tasks/index', text: '任务', icon: '/assets/icons/tab_tasks.png' },
-      { pagePath: '/pages/review/index', text: '复盘', icon: '/assets/icons/tab_review.png' }
+      { pagePath: '/pages/today/index', text: '今日' },
+      { pagePath: '/pages/schedule/index', text: '排程' },
+      { pagePath: '/pages/tasks/index', text: '任务' },
+      { pagePath: '/pages/review/index', text: '复盘' }
     ]
   },
 
