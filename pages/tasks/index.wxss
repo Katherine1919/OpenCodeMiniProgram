@@ -284,7 +284,7 @@
   left: 24rpx;
   right: 24rpx;
   bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
-  z-index: 998;
+  z-index: 10001;
 }
 
 .bottom-action__btn {
@@ -292,10 +292,11 @@
   align-items: center;
   justify-content: center;
   height: 88rpx;
-  border-radius: 44rpx;
-  background: #F7B96B;
+  line-height: 88rpx;
+  border-radius: 999rpx;
+  background: rgba(246,179,93,0.95);
   color: #fff;
   font-size: 30rpx;
-  font-weight: 600;
-  box-shadow: 0 6rpx 20rpx rgba(247,185,107,0.28);
+  font-weight: 700;
+  box-shadow: 0 12rpx 28rpx rgba(0,0,0,0.12);
 }

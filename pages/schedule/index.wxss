@@ -6,7 +6,8 @@
 
 .schedule-page .page-container {
   padding: 0 24rpx;
-  padding-bottom: 24rpx;
+  padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 24rpx);
+  box-sizing: border-box;
 }
 
 .schedule-page .glass-card {
