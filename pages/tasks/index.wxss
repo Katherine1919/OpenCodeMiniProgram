@@ -6,7 +6,7 @@
 
 .task-page .page-container {
   padding: 0 24rpx;
-  padding-bottom: 24rpx;
+  padding-bottom: calc(88rpx + 16rpx + 112rpx + env(safe-area-inset-bottom) + 24rpx);
 }
 
 .task-page .glass-card {
@@ -276,4 +276,26 @@
 
 .task-page .mt-4 {
   margin-top: 24rpx;
+}
+
+/* 底部固定按钮容器 - 位于 tabbar 之上 */
+.bottom-action {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
+  z-index: 998;
+}
+
+.bottom-action__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: #F7B96B;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 6rpx 20rpx rgba(247,185,107,0.28);
 }

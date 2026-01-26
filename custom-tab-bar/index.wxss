@@ -30,12 +30,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4rpx;
-  padding: 8rpx 26rpx;
+  gap: 2rpx;
+  padding: 0 22rpx;
   border-radius: 999rpx;
   transition: all 0.28s ease-out;
-  min-width: 72rpx;
-  height: 64rpx;
+  min-width: 0;
+  height: 58rpx;
   justify-content: center;
   background: transparent;
   border: 1rpx solid transparent;
@@ -98,5 +98,5 @@
 
 .capsule-active .tab-text {
   color: #D9892A;
-  font-weight: 600;
+  font-weight: 700;
 }

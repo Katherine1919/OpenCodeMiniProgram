@@ -94,12 +94,13 @@
       <view class="list-bottom-spacer"></view>
     </view>
 
-    <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card">
-      <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
-    </view>
+     <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card">
+       <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
+     </view>
+   </view>
 
-    <view class="cta-section mb-4">
-      <view class="primary-btn" bindtap="generateToday">生成今日排程</view>
-    </view>
-  </view>
-</view>
+   <!-- 底部固定按钮，位于 tabbar 之上 -->
+   <view class="bottom-action">
+     <view class="bottom-action__btn" bindtap="generateToday">生成今日排程</view>
+   </view>
+ </view>
