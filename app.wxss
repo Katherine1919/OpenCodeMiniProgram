@@ -13,10 +13,13 @@
 
 page {
   font-family: "PingFang SC", "HarmonyOS Sans SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-}
-
-page {
-  background: linear-gradient(180deg, #FFE7E0 0%, #FFF3D6 35%, #EFFFF0 70%, #EAF6FF 100%);
+  min-height: 100%;
+  background: linear-gradient(
+    180deg,
+    #FFF3D6 0%,
+    #F6FFEF 40%,
+    #EAF7FF 100%
+  );
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
 }
 
@@ -32,6 +35,7 @@ page {
   z-index: 1;
   padding: 0 24rpx;
   padding-bottom: 24rpx;
+  background: transparent;
 }
 
 .list-bottom-spacer {

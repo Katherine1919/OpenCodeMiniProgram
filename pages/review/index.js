@@ -39,11 +39,23 @@ Page({
     const dateStr = `${year}-${month}-${day}`;
 
     const scheduleItems = store.getSchedule(dateStr);
-    const templates = store.getTemplates();
+    const templates = store.getTimeTemplates();
+    const tasks = store.getTasks();
 
-    const taskItems = scheduleItems.filter(it => it.kind === 'task');
+    // 用 task 表兜底同步 status 和 minutes，确保与今日页数据一致
+    const taskItems = scheduleItems
+      .filter(it => it.kind === 'task')
+      .map(it => {
+        const t = tasks.find(tk => tk.id === it.taskId);
+        return {
+          ...it,
+          status: it.status || (t ? t.status : 'todo'),
+          minutes: it.minutes || (t ? t.minutes : 0)
+        };
+      });
+
     const doneCount = taskItems.filter(it => it.status === 'done').length;
-    const totalMinutes = taskItems.filter(it => it.status === 'done').reduce((sum, it) => sum + it.minutes, 0);
+    const totalMinutes = taskItems.filter(it => it.status === 'done').reduce((sum, it) => sum + (it.minutes || 0), 0);
     const availableMinutes = templates.reduce((sum, tmpl) => {
       const [sh, sm] = tmpl.start.split(':').map(Number);
       const [eh, em] = tmpl.end.split(':').map(Number);
@@ -52,7 +64,8 @@ Page({
 
     const completionRate = taskItems.length > 0 ? Math.round((doneCount / taskItems.length) * 100) : 0;
 
-    const notDoneItems = scheduleItems.filter(it => it.kind === 'task' && it.status === 'not_done' && it.note);
+    // 同样用 task 表兜底获取未完成原因
+    const notDoneItems = taskItems.filter(it => it.status === 'not_done' && it.note);
     const notDoneReasons = notDoneItems.map(it => ({
       title: it.title,
       reason: it.note
