@@ -58,10 +58,13 @@ jobs:
           echo "NPM : $(npm -v)"
           echo "PWD : $(pwd)"
 
+          # Configure npm to ignore platform-specific optional deps (fsevents)
+          npm config set optional false
+
           if [ -f package-lock.json ]; then
-            npm ci --omit=optional || npm install --omit=optional
+            npm ci --force || npm install --force
           else
-            npm install --omit=optional
+            npm install --force
           fi
 
       - name: Run lint
