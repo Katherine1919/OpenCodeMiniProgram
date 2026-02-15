@@ -61,10 +61,17 @@ jobs:
         working-directory: ${{ steps.detect.outputs.app_dir }}
         shell: bash
         run: |
+          set -euo pipefail
+
+          echo "Node: $(node -v)"
+          echo "NPM : $(npm -v)"
+          echo "PWD : $(pwd)"
+
+          # 先尝试 lockfile 严格安装；失败则回退到 install（更容错）
           if [ -f package-lock.json ]; then
-            npm ci
+            npm ci --omit=optional || npm install --omit=optional
           else
-            npm install
+            npm install --omit=optional
           fi
 
       - name: Install Playwright Chromium
