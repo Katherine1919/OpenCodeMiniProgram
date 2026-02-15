@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>UTM Governance Linter</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+    }
+    h1 {
+      font-size: 16px;
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .status.active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      background: #f3f4f6;
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+    .rules-info {
+      font-size: 12px;
+      color: #6b7280;
+      padding: 8px;
+      background: #f9fafb;
+      border-radius: 6px;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 UTM Governance Linter</h1>
+  
+  <div class="status active" id="status">
+    ✅ Active on this page
+  </div>
+  
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="validated">0</div>
+      <div class="stat-label">Validated</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="blocked">0</div>
+      <div class="stat-label">Blocked</div>
+    </div>
+  </div>
+  
+  <div class="rules-info">
+    Rule Version: <strong id="version">1</strong><br>
+    Source: <span id="source">Default</span>
+  </div>
+  
+  <button id="refresh">Refresh Rules</button>
+  
+  <script type="module" src="./index.ts"></script>
+</body>
+</html>

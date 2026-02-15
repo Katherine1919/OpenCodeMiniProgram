@@ -8,3 +8,20 @@ dist/
 .vscode/
 .idea/
 *.md
+cat >> .gitignore <<'EOF'
+
+# local test artifacts
+extension/playwright-report/
+extension/test-results/
+extension/.pw-user-data/
+utm-linter/playwright-report/
+utm-linter/test-results/
+utm-linter/.pw-user-data/
+
+# local test artifacts
+extension/playwright-report/
+extension/test-results/
+extension/.pw-user-data/
+utm-linter/playwright-report/
+utm-linter/test-results/
+utm-linter/.pw-user-data/
