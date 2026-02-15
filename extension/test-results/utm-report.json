@@ -88,12 +88,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2066,
+                  "duration": 2167,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-02-15T15:07:54.272Z",
+                  "startTime": "2026-02-15T15:18:25.416Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -103,7 +103,7 @@
           ],
           "id": "bcb45d880bc64d9b889f-75d0d1fe32684fec4dec",
           "file": "utm-linter.spec.ts",
-          "line": 64,
+          "line": 83,
           "column": 1
         },
         {
@@ -122,12 +122,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 814,
+                  "duration": 919,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-02-15T15:07:56.345Z",
+                  "startTime": "2026-02-15T15:18:27.593Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -137,7 +137,7 @@
           ],
           "id": "bcb45d880bc64d9b889f-3363d24969b05ca166c1",
           "file": "utm-linter.spec.ts",
-          "line": 82,
+          "line": 97,
           "column": 1
         },
         {
@@ -156,12 +156,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2173,
+                  "duration": 2111,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-02-15T15:07:57.166Z",
+                  "startTime": "2026-02-15T15:18:28.519Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -171,7 +171,85 @@
           ],
           "id": "bcb45d880bc64d9b889f-901fbac3d5fe5c756b80",
           "file": "utm-linter.spec.ts",
-          "line": 106,
+          "line": 117,
+          "column": 1
+        },
+        {
+          "title": "blocks submit when input is marked invalid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1190,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-15T15:18:30.640Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bcb45d880bc64d9b889f-02323d0745b46804789d",
+          "file": "utm-linter.spec.ts",
+          "line": 131,
+          "column": 1
+        },
+        {
+          "title": "autofix button works when provided by current rules",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "note",
+                  "description": "Current rules did not produce error UI on candidate URLs; autofix check skipped."
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2516,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-15T15:18:31.836Z",
+                  "annotations": [
+                    {
+                      "type": "note",
+                      "description": "Current rules did not produce error UI on candidate URLs; autofix check skipped."
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bcb45d880bc64d9b889f-73d1e5ba71327e7f7c80",
+          "file": "utm-linter.spec.ts",
+          "line": 159,
           "column": 1
         }
       ]
@@ -179,9 +257,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-02-15T15:07:53.739Z",
-    "duration": 5648.691,
-    "expected": 3,
+    "startTime": "2026-02-15T15:18:24.877Z",
+    "duration": 9514.2,
+    "expected": 5,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -16,7 +16,11 @@
     "e2e:ui": "playwright test --ui",
     "package": "npm run build && cd dist && zip -r ../artifacts/utm-linter-extension.zip .",
     "test:utm": "EXT_PATH=./dist playwright test tests/utm-linter.spec.ts",
-    "test:utm:summary": "node scripts/summarize-utm-report.mjs"
+    "test:utm:summary": "node scripts/summarize-utm-report.mjs",
+    "build:content": "esbuild dist/content/index.js --bundle --format=iife --platform=browser --target=chrome120 --outfile=dist/content/index.bundle.js",
+    "test:utm": "EXT_PATH=./dist playwright test tests/utm-linter.spec.ts",
+    "test:utm:summary": "node scripts/summarize-utm-report.mjs",
+    "qa": "npm run build:content && npm run test:utm && npm run test:utm:summary"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
