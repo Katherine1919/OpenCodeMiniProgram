@@ -4,12 +4,10 @@ on:
   push:
     paths:
       - "utm-linter/**"
-      - "extension/**"
       - ".github/workflows/qa.yml"
   pull_request:
     paths:
       - "utm-linter/**"
-      - "extension/**"
       - ".github/workflows/qa.yml"
   workflow_dispatch:
   schedule:
@@ -32,20 +30,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Detect app directory (utm-linter first, then extension)
+      - name: Detect app directory
         id: detect
         shell: bash
         run: |
           if [ -f "utm-linter/package.json" ]; then
             APP_DIR="utm-linter"
-          elif [ -f "extension/package.json" ]; then
-            APP_DIR="extension"
           else
-            echo "❌ Neither 'utm-linter/package.json' nor 'extension/package.json' exists."
-            echo "Top-level files:"
-            ls -la
-            echo "Find package.json (depth<=4):"
-            find . -maxdepth 4 -name package.json -print
+            echo "❌ 'utm-linter/package.json' not found."
             exit 1
           fi
 
@@ -62,45 +54,150 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           echo "Node: $(node -v)"
           echo "NPM : $(npm -v)"
           echo "PWD : $(pwd)"
 
-          # 先尝试 lockfile 严格安装；失败则回退到 install（更容错）
           if [ -f package-lock.json ]; then
             npm ci --omit=optional || npm install --omit=optional
           else
             npm install --omit=optional
           fi
 
+      - name: Run lint
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        run: npm run lint
+
+      - name: Run unit tests
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        run: npm test
+
+      - name: Run fuzz tests
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        run: npm run test:fuzz
+
+      - name: Build extension
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        run: npm run build
+
+      - name: Verify build artifacts
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        shell: bash
+        run: |
+          echo "=== Verifying build artifacts ==="
+          
+          # Check manifest.json exists and is valid JSON
+          if [ ! -f "dist/manifest.json" ]; then
+            echo "❌ dist/manifest.json not found"
+            exit 1
+          fi
+          echo "✅ manifest.json exists"
+          
+          # Validate JSON
+          node -e "JSON.parse(require('fs').readFileSync('dist/manifest.json'))" || {
+            echo "❌ manifest.json is invalid JSON"
+            exit 1
+          }
+          echo "✅ manifest.json is valid JSON"
+          
+          # Check content script exists
+          if [ ! -f "dist/content/index.js" ]; then
+            echo "❌ dist/content/index.js not found"
+            exit 1
+          fi
+          echo "✅ content/index.js exists"
+          
+          # Verify content script has no ES module imports (required for MV3)
+          if grep -q "^import " dist/content/index.js; then
+            echo "❌ content script contains ES module imports (not allowed in MV3)"
+            echo "Import lines found:"
+            grep "^import " dist/content/index.js
+            exit 1
+          fi
+          echo "✅ content script has no ES module imports"
+          
+          # Verify content script has no ES module exports
+          if grep -q "export " dist/content/index.js; then
+            echo "❌ content script contains ES module exports (not allowed in MV3)"
+            echo "Export lines found:"
+            grep "export " dist/content/index.js
+            exit 1
+          fi
+          echo "✅ content script has no ES module exports"
+          
+          # Check background script
+          if [ ! -f "dist/background/index.js" ]; then
+            echo "❌ dist/background/index.js not found"
+            exit 1
+          fi
+          echo "✅ background/index.js exists"
+          
+          # Check popup
+          if [ ! -f "dist/popup/index.html" ]; then
+            echo "❌ dist/popup/index.html not found"
+            exit 1
+          fi
+          echo "✅ popup/index.html exists"
+          
+          # Check icons
+          for size in 16 48 128; do
+            if [ ! -f "dist/icon${size}.png" ]; then
+              echo "❌ dist/icon${size}.png not found"
+              exit 1
+            fi
+            echo "✅ icon${size}.png exists"
+          done
+          
+          echo "=== All build artifacts verified ==="
+
+      - name: Package extension
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        run: |
+          mkdir -p artifacts
+          npm run package
+
+      - name: Verify package
+        working-directory: ${{ steps.detect.outputs.app_dir }}
+        shell: bash
+        run: |
+          echo "=== Verifying extension package ==="
+          
+          if [ ! -f "artifacts/utm-linter-extension.zip" ]; then
+            echo "❌ artifacts/utm-linter-extension.zip not found"
+            exit 1
+          fi
+          
+          echo "Package size: $(du -h artifacts/utm-linter-extension.zip | cut -f1)"
+          
+          # Verify zip contents
+          unzip -l artifacts/utm-linter-extension.zip | grep -q "manifest.json" || {
+            echo "❌ manifest.json not in package"
+            exit 1
+          }
+          echo "✅ manifest.json in package"
+          
+          unzip -l artifacts/utm-linter-extension.zip | grep -q "content/index.js" || {
+            echo "❌ content/index.js not in package"
+            exit 1
+          }
+          echo "✅ content/index.js in package"
+          
+          echo "=== Package verified ==="
+
       - name: Install Playwright Chromium
         working-directory: ${{ steps.detect.outputs.app_dir }}
         run: npx playwright install --with-deps chromium
 
-      - name: Run UTM tests
+      - name: Run E2E tests
         working-directory: ${{ steps.detect.outputs.app_dir }}
-        shell: bash
-        run: |
-          if npm run | grep -q "test:utm"; then
-            npm run test:utm
-          elif [ -f "tests/utm-linter.spec.ts" ]; then
-            npx playwright test tests/utm-linter.spec.ts
-          else
-            npx playwright test
-          fi
+        run: npm run test:utm
 
-      - name: Run summary (optional)
+      - name: Generate test report
         if: always()
         working-directory: ${{ steps.detect.outputs.app_dir }}
-        shell: bash
         run: |
-          if npm run | grep -q "test:utm:summary"; then
-            npm run test:utm:summary || true
-          elif [ -f "scripts/summarize-utm-report.mjs" ]; then
+          if [ -f "scripts/summarize-utm-report.mjs" ]; then
             node scripts/summarize-utm-report.mjs || true
-          else
-            echo "No summary script found, skipped."
           fi
 
       - name: Upload QA artifacts
@@ -112,4 +209,32 @@ jobs:
           path: |
             ${{ steps.detect.outputs.app_dir }}/playwright-report/**
             ${{ steps.detect.outputs.app_dir }}/test-results/**
-            ${{ steps.detect.outputs.app_dir }}/test-results/utm-report.json
+            ${{ steps.detect.outputs.app_dir }}/artifacts/utm-linter-extension.zip
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: qa-artifacts-${{ github.run_number }}
+          path: artifacts
+
+      - name: Check release readiness
+        run: |
+          echo "=== Release Readiness Check ==="
+          
+          if [ ! -f "artifacts/utm-linter-extension.zip" ]; then
+            echo "❌ Extension package not found"
+            exit 1
+          fi
+          
+          echo "✅ Extension package ready for release"
+          echo "Package location: artifacts/utm-linter-extension.zip"
+          echo "Package size: $(du -h artifacts/utm-linter-extension.zip | cut -f1)"
