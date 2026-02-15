@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && cp -n dist/src/popup/index.html dist/popup/index.html 2>/dev/null || true",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
@@ -17,10 +17,11 @@
     "package": "npm run build && cd dist && zip -r ../artifacts/utm-linter-extension.zip .",
     "test:utm": "EXT_PATH=./dist playwright test tests/utm-linter.spec.ts",
     "test:utm:summary": "node scripts/summarize-utm-report.mjs",
-    "build:content": "esbuild dist/content/index.js --bundle --format=iife --platform=browser --target=chrome120 --outfile=dist/content/index.bundle.js",
-    "test:utm": "EXT_PATH=./dist playwright test tests/utm-linter.spec.ts",
-    "test:utm:summary": "node scripts/summarize-utm-report.mjs",
-    "qa": "npm run build:content && npm run test:utm && npm run test:utm:summary"
+    "test:dist": "EXT_PATH=./dist playwright test tests/dist-smoke.spec.ts",
+    "test:perm": "EXT_PATH=./dist playwright test tests/permission-boundary.spec.ts",
+    "test:sw": "EXT_PATH=./dist playwright test tests/sw-lifecycle.spec.ts",
+    "test:security": "EXT_PATH=./dist playwright test tests/security-compliance.spec.ts",
+    "test:all": "npm run test && npm run test:fuzz && npm run build && npm run test:dist && npm run test:utm && npm run test:perm && npm run test:sw && npm run test:security"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

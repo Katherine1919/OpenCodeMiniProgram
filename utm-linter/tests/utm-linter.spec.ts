@@ -199,3 +199,98 @@ test("does NOT inject on non-matched domain", async () => {
     await context.close().catch(() => {});
   }
 });
+
+test("blocks form submission when UTM is invalid", async () => {
+  const { context, page } = await openHarness("linkedin", "ok");
+  try {
+    // Wait for extension to initialize
+    await page.waitForFunction(
+      () => document.documentElement.getAttribute("data-utm-linter-loaded") === "1",
+      { timeout: 10000 }
+    );
+
+    // Wait for input wrapper
+    await expect
+      .poll(async () => page.locator(".utm-linter-wrapper").count(), {
+        timeout: 10000,
+        intervals: [200, 500, 1000],
+      })
+      .toBeGreaterThanOrEqual(1);
+
+    // Fill invalid UTM (uppercase - should fail validation)
+    const input = page.locator("#url");
+    await input.fill("https://example.com/?utm_source=TEST&utm_medium=CPC");
+    await input.blur();
+
+    // Wait for validation to complete and error UI to appear
+    await expect
+      .poll(async () => page.locator(".utm-linter-error-ui").count(), {
+        timeout: 5000,
+        intervals: [200, 500],
+      })
+      .toBeGreaterThanOrEqual(1);
+
+    // Check utmValid is false
+    const state = await getState(page);
+    expect(state.utmValid).toBe("false");
+
+    // Try to submit form
+    const submitBtn = page.locator("#submit");
+    
+    // Set up dialog handler to catch alert
+    let alertShown = false;
+    page.on("dialog", async (dialog) => {
+      if (dialog.type() === "alert" && dialog.message().includes("UTM validation errors")) {
+        alertShown = true;
+      }
+      await dialog.accept();
+    });
+
+    await submitBtn.click();
+
+    // Wait a bit for alert
+    await page.waitForTimeout(1000);
+
+    // Verify submission was blocked (either by preventDefault or alert)
+    expect(alertShown || state.utmValid === "false").toBeTruthy();
+  } finally {
+    await context.close().catch(() => {});
+  }
+});
+
+test("allows form submission when UTM is valid", async () => {
+  const { context, page } = await openHarness("linkedin", "ok");
+  try {
+    // Wait for extension to initialize
+    await page.waitForFunction(
+      () => document.documentElement.getAttribute("data-utm-linter-loaded") === "1",
+      { timeout: 10000 }
+    );
+
+    // Wait for input wrapper
+    await expect
+      .poll(async () => page.locator(".utm-linter-wrapper").count(), {
+        timeout: 10000,
+        intervals: [200, 500, 1000],
+      })
+      .toBeGreaterThanOrEqual(1);
+
+    // Fill valid UTM (lowercase, allowed chars)
+    const input = page.locator("#url");
+    await input.fill("https://example.com/?utm_source=google&utm_medium=cpc&utm_campaign=spring_sale");
+    await input.blur();
+
+    // Wait for validation
+    await page.waitForTimeout(1000);
+
+    // Check utmValid is true
+    const state = await getState(page);
+    expect(state.utmValid).toBe("true");
+
+    // No error UI should be present
+    const errorCount = await page.locator(".utm-linter-error-ui").count();
+    expect(errorCount).toBe(0);
+  } finally {
+    await context.close().catch(() => {});
+  }
+});

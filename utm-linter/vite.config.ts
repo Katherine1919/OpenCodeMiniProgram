@@ -34,7 +34,13 @@ export default defineConfig({
                 popup: resolve(__dirname, 'src/popup/index.html'),
               },
               output: {
-                entryFileNames: '[name]/index.js',
+                entryFileNames: (chunkInfo) => {
+                  // Put popup files directly in dist/popup/, not dist/src/popup/
+                  if (chunkInfo.name === 'popup') {
+                    return 'popup/index.js';
+                  }
+                  return '[name]/index.js';
+                },
                 format: 'es',
               },
             },
