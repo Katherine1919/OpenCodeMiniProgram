@@ -27,7 +27,8 @@
         "*://ads.google.com/*"
       ],
       "js": ["content/index.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "type": "module"
     }
   ],
   "action": {

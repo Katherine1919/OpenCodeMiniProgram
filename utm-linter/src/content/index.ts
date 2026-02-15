@@ -116,16 +116,20 @@ const validatedInputs = new WeakSet<HTMLInputElement>();
 async function init(): Promise<void> {
   const platform = detectPlatform();
   if (platform === 'unknown') return;
-  
+
+  // Set marker immediately so tests can detect injection
+  document.documentElement.setAttribute('data-utm-linter-loaded', '1');
+  document.documentElement.setAttribute('data-platform', platform);
+
   rulesManager = new RulesManager(
     'https://api.utm-linter.io',
     'default-team'
   );
   await rulesManager.fetchRemoteRules();
-  
+
   eventQueue = new EventQueue('https://api.utm-linter.io/events');
   eventQueue.startPeriodicFlush();
-  
+
   observeDOM();
   interceptSubmits();
 }
