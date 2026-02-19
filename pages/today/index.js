@@ -136,13 +136,21 @@ Page({
     }, 100);
   },
 
-  completeTask(e) {
+  completeTask: debounce(function(e) {
     const { id, taskid } = e.currentTarget.dataset;
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
+    
+    // 检查任务是否已经完成，防止重复操作
+    const tasks = store.getTasks();
+    const task = tasks.find(t => t.id === taskid);
+    if (task && task.status === 'done') {
+      wx.showToast({ title: '任务已完成', icon: 'none' });
+      return;
+    }
     
     store.updateTask(taskid, { status: 'done' });
     
@@ -154,7 +162,7 @@ Page({
     
     this.loadData();
     wx.showToast({ title: '已完成', icon: 'success', duration: 1500 });
-  },
+  }, 500),
 
   skipTask(e) {
     const { id } = e.currentTarget.dataset;
@@ -165,7 +173,7 @@ Page({
     this.setData({ reasonInput: e.detail.value });
   },
 
-  saveReason(e) {
+  saveReason: debounce(function(e) {
     const { id, taskid } = e.currentTarget.dataset;
     const { reasonInput } = this.data;
     const today = new Date();
@@ -185,5 +193,5 @@ Page({
     this.setData({ expandedReasonId: null });
     this.loadData();
     wx.showToast({ title: '已记下', icon: 'success', duration: 1500 });
-  }
+  }, 500),
 });

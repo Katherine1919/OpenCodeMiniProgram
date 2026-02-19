@@ -2,6 +2,18 @@ const store = require('../../utils/store');
 const { generateSchedule, timeToMinutes } = require('../../utils/scheduler');
 const { normalizeTimeInput } = require('../../utils/time');
 
+// 防抖函数
+function debounce(fn, delay = 500) {
+  let timer = null;
+  return function(...args) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+    }, delay);
+    return fn.apply(this, args);
+  };
+}
+
 Page({
   data: {
     templates: [],
@@ -183,7 +195,7 @@ Page({
     this.loadTemplates();
   },
 
-  generateToday() {
+  generateToday: debounce(function() {
     const templates = store.getTimeTemplates();
     if (templates.length === 0) {
       wx.showToast({ title: '请先添加时间模板', icon: 'none', duration: 2000 });

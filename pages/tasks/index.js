@@ -2,6 +2,18 @@ const store = require('../../utils/store');
 const { normalizeTimeInput, validateTimeRange } = require('../../utils/time');
 const { timeToMinutes, generateSchedule } = require('../../utils/scheduler');
 
+// 防抖函数
+function debounce(fn, delay = 500) {
+  let timer = null;
+  return function(...args) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+    }, delay);
+    return fn.apply(this, args);
+  };
+}
+
 Page({
   data: {
     newTask: {
@@ -192,11 +204,17 @@ Page({
     this.setData({ 'newTask.repeatRule': rule === 'null' ? null : rule });
   },
 
-  addTask() {
+  addTask: debounce(function() {
     const { newTask, editingTaskId } = this.data;
     
     if (!newTask.title.trim()) {
       wx.showToast({ title: '请输入任务标题', icon: 'none' });
+      return;
+    }
+    
+    // 标题长度限制
+    if (newTask.title.trim().length > 100) {
+      wx.showToast({ title: '任务标题不能超过100个字符', icon: 'none' });
       return;
     }
     
@@ -288,7 +306,7 @@ Page({
     
     this.loadTasks();
     wx.showToast({ title: editingTaskId ? '已保存，请重新生成排程' : '已加入任务池', icon: editingTaskId ? 'none' : 'success', duration: 2000 });
-  },
+  }, 500),
 
   selectFilter(e) {
     const tab = e.currentTarget.dataset.tab;
