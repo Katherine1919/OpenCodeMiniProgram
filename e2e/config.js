@@ -1,20 +1,62 @@
 /**
  * E2E 测试配置
+ * 端口：51557（用户机器固定端口）
  */
+const path = require('path');
+const fs = require('fs');
+
+// 端口配置：支持环境变量覆盖，默认 51557
+const DEVTOOLS_PORT = Number(process.env.DEVTOOLS_PORT || 51557);
+
+// 项目路径检测
+const projectPath = process.cwd().replace('/e2e', '');
+
+// 验证项目路径
+if (!fs.existsSync(path.join(projectPath, 'project.config.json'))) {
+  console.error('❌ 错误：找不到 project.config.json');
+  console.error(`   请确认项目路径正确: ${projectPath}`);
+  console.error('   或者从 e2e 目录运行: cd /Users/Zhuanz/Downloads/OpenCodePlanner/e2e');
+  process.exit(1);
+}
+
 module.exports = {
-  // 开发者工具路径（macOS）
-  devtoolPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+  // 服务端口（固定 51557）
+  port: DEVTOOLS_PORT,
+  
+  // 开发者工具配置
+  devtools: {
+    // 可能的 App 路径（macOS）
+    appPaths: [
+      '/Applications/wechatwebdevtools.app',
+      '/Applications/微信开发者工具.app'
+    ],
+    
+    // CLI 路径
+    cliPaths: [
+      '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      '/Applications/wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
+      '/Applications/微信开发者工具.app/Contents/MacOS/cli',
+      '/Applications/微信开发者工具.app/Contents/MacOS/微信开发者工具'
+    ]
+  },
   
   // 小程序项目路径
-  projectPath: process.cwd().replace('/e2e', ''),
+  projectPath: projectPath,
+  
+  // 连接重试配置
+  connection: {
+    maxRetries: 60,      // 最多 60 次
+    retryInterval: 1000, // 每 1 秒
+    startupDelay: 5000   // 启动后等待 5 秒
+  },
   
   // 截图配置
   screenshots: {
     baselineDir: './screenshots/baseline',
     currentDir: './screenshots/current',
     diffDir: './screenshots/diff',
-    threshold: 0.1, // 差异阈值（百分比）
-    pixelThreshold: 100 // 像素差异阈值
+    threshold: 0.1,
+    pixelThreshold: 100
   },
   
   // 页面配置
@@ -41,7 +83,7 @@ module.exports = {
     }
   },
   
-  // Mock 数据配置
+  // Mock 数据
   mockData: {
     enabled: true,
     namespace: 'e2e_mock_',
@@ -76,11 +118,11 @@ module.exports = {
     }
   },
   
-  // 等待时间配置
+  // 超时配置
   timeouts: {
-    launch: 10000,
-    navigate: 5000,
-    render: 2000,
-    scroll: 1000
+    launch: 30000,
+    navigate: 10000,
+    render: 3000,
+    scroll: 2000
   }
 };
