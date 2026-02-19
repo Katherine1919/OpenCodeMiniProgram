@@ -11,7 +11,7 @@
     </view>
 
     <view class="section-title mb-3">可用时间模板</view>
-    <view class="template-list mb-4">
+    <view wx:if="{{templates.length > 0}}" class="template-list mb-4">
       <view wx:for="{{templates}}" wx:key="id" class="template-card glass-card">
         <view class="template-info">
           <text class="text-body">{{item.start}} - {{item.end}}</text>
@@ -22,6 +22,9 @@
           <view class="pill-mini" bindtap="deleteTemplate" data-id="{{item.id}}">移除</view>
         </view>
       </view>
+    </view>
+    <view wx:else class="empty glass-card mb-4">
+      <text class="text-helper text-muted">还没有时间模板。先添加一段可用时间。</text>
     </view>
 
     <view wx:if="{{showAddForm}}" class="form-card glass-card mb-4">

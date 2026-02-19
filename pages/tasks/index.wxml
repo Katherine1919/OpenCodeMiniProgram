@@ -70,7 +70,11 @@
       <view class="chip {{filterTab === 'overflow' ? 'chip-on' : ''}}" bindtap="selectFilter" data-tab="overflow">溢出</view>
     </view>
 
-    <view class="task-list">
+    <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card mb-4">
+      <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
+    </view>
+
+    <view wx:else class="task-list">
       <view wx:for="{{filteredTasks}}" wx:key="id" class="task-item glass-card" bindtap="editTask" data-id="{{item.id}}">
         <view class="task-content">
           <view class="task-header">
@@ -92,10 +96,6 @@
         </view>
       </view>
       <view class="list-bottom-spacer"></view>
-    </view>
-
-    <view wx:if="{{filteredTasks.length === 0}}" class="empty glass-card">
-      <text class="text-helper text-muted">还没有任务。先放一件小事进来。</text>
     </view>
 
     <view class="cta-section mb-4">
