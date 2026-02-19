@@ -1,0 +1,131 @@
+{
+  "name": "极致了-饼干哥哥AGI-飞书机器人推送",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "hours", "hours": 9}]}
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 极致了API配置\nconst CONFIG = {\n  accountName: '饼干哥哥AGI',\n  apiKey: 'JZLdc9670be1403c05c',\n  baseUrl: 'https://www.dajiala.com/fbmain/monitor/v3/post_history',\n  maxPages: 5,      // 每次抓5页\n  delayMs: 2000     // 2秒间隔\n};\n\n// 飞书机器人配置（需要你填写）\nconst FEISHU_CONFIG = {\n  webhookUrl: 'YOUR_WEBHOOK_URL_HERE',  // 飞书机器人Webhook地址\n  secret: 'YOUR_SECRET_HERE'             // 飞书机器人Secret（如果有）\n};\n\nreturn [{\n  json: {\n    config: CONFIG,\n    feishu: FEISHU_CONFIG,\n    currentPage: 1,\n    allArticles: [],\n    totalCost: 0\n  }\n}];"
+      },
+      "name": "配置参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.baseUrl }}",
+        "body": {
+          "name": "={{ $json.config.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.config.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nif (response.code !== 0) {\n  if (response.code === 110 || response.code === 115) {\n    return [{json: {...$input.first().json, hasMore: false}}];\n  }\n  throw new Error(`API错误: ${response.msg}`);\n}\n\nconst articles = response.data || [];\nconst totalPage = response.total_page || 1;\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\nconst maxPages = $input.first().json.config.maxPages;\n\n// 去重\nconst existingIds = new Set(allArticles.map(a => a.appmsgid));\nconst newArticles = articles.filter(a => !existingIds.has(a.appmsgid));\nallArticles.push(...newArticles);\n\nconst hasMore = currentPage < Math.min(totalPage, maxPages);\n\nconsole.log(`第 ${currentPage} 页: ${newArticles.length} 篇新文章，累计 ${allArticles.length} 篇`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles: newArticles,\n    allArticles,\n    totalPages: totalPage,\n    hasMore,\n    nextPage: currentPage + 1,\n    remainMoney: response.remain_money,\n    totalCost: ($input.first().json.totalCost || 0) + (response.cost_money || 0)\n  }\n}];"
+      },
+      "name": "处理API数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "继续翻页",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {"amount": 2, "unit": "seconds"},
+      "name": "延迟2秒",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {...$input.first().json, currentPage: $input.first().json.nextPage}}];"
+      },
+      "name": "下一页",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 生成飞书消息卡片\nconst data = $input.first().json;\nconst articles = data.allArticles;\n\n// 按日期分组\nconst grouped = {};\narticles.forEach(article => {\n  const date = article.post_time_str.split(' ')[0];\n  if (!grouped[date]) grouped[date] = [];\n  grouped[date].push(article);\n});\n\n// 生成消息内容（限制长度）\nlet content = '';\nconst sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).slice(0, 5);\n\nsortedDates.forEach(date => {\n  content += `\\n**${date}**\\n`;\n  grouped[date].slice(0, 3).forEach((article, idx) => {\n    content += `${idx + 1}. [${article.title}](${article.url})\\n`;\n  });\n  if (grouped[date].length > 3) {\n    content += `...还有 ${grouped[date].length - 3} 篇文章\\n`;\n  }\n});\n\nconst message = {\n  msg_type: 'interactive',\n  card: {\n    config: {wide_screen_mode: true},\n    header: {\n      title: {\n        tag: 'plain_text',\n        content: `📰 饼干哥哥AGI - 文章监控报告`\n      },\n      template: 'blue'\n    },\n    elements: [\n      {\n        tag: 'div',\n        text: {\n          tag: 'lark_md',\n          content: `**抓取时间:** ${new Date().toLocaleString()}\\n**文章总数:** ${articles.length} 篇\\n**总费用:** ${data.totalCost.toFixed(2)} 元\\n**账户余额:** ${data.remainMoney} 元`\n        }\n      },\n      {tag: 'hr'},\n      {\n        tag: 'div',\n        text: {\n          tag: 'lark_md',\n          content: content || '暂无文章'\n        }\n      }\n    ]\n  }\n};\n\nreturn [{\n  json: {\n    ...data,\n    message,\n    webhookUrl: data.feishu.webhookUrl\n  }\n}];"
+      },
+      "name": "生成飞书消息",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.webhookUrl }}",
+        "body": "={{ $json.message }}",
+        "options": {"timeout": 10000}
+      },
+      "name": "发送到飞书",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "fileName": "=/home/admin/.openclaw/workspace/binggan_articles_{{ Date.now() }}.json",
+        "data": "={{ JSON.stringify($json.allArticles, null, 2) }}"
+      },
+      "name": "保存备份",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1850, 400]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {"main": [[{"node": "配置参数", "type": "main", "index": 0}]]},
+    "Schedule Trigger": {"main": [[{"node": "配置参数", "type": "main", "index": 0}]]},
+    "配置参数": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "获取文章列表": {"main": [[{"node": "处理API数据", "type": "main", "index": 0}]]},
+    "处理API数据": {"main": [[{"node": "继续翻页", "type": "main", "index": 0}]]},
+    "继续翻页": {
+      "main": [
+        [{"node": "生成飞书消息", "type": "main", "index": 0}],
+        [{"node": "延迟2秒", "type": "main", "index": 0}]
+      ]
+    },
+    "延迟2秒": {"main": [[{"node": "下一页", "type": "main", "index": 0}]]},
+    "下一页": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "生成飞书消息": {"main": [[{"node": "发送到飞书", "type": "main", "index": 0}]]},
+    "发送到飞书": {"main": [[{"node": "保存备份", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

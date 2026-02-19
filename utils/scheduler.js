@@ -1,3 +1,10 @@
+// Counter for unique schedule item IDs
+let schedIdCounter = 0;
+
+function generateSchedId() {
+  return `sched_${Date.now()}_${++schedIdCounter}_${Math.random().toString(36).substr(2, 5)}`;
+}
+
 function timeToMinutes(time) {
   if (!time || typeof time !== 'string') return 0;
   const parts = time.split(':');
@@ -193,7 +200,7 @@ function generateSchedule(tasks, templates, date) {
     }
 
     items.push({
-      id: `sched_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateSchedId(),
       taskId: task.id,
       kind: 'task',
       title: task.title,
@@ -245,7 +252,7 @@ function generateSchedule(tasks, templates, date) {
 
         if (gap >= task.minutes && cursor + task.minutes <= tmplEndMin) {
           items.push({
-            id: `sched_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: generateSchedId(),
             taskId: task.id,
             kind: 'task',
             title: task.title,

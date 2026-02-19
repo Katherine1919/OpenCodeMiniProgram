@@ -1,0 +1,255 @@
+{
+  "name": "极致了-饼干哥哥AGI-完整内容抓取-飞书文档",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "hours", "hours": 9}]}
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const TOTAL_PAGES = 111;\nconst DAYS = 6;\nconst PAGES_PER_DAY = 19;\n\nconst CONFIG = {\n  accountName: '饼干哥哥AGI',\n  apiKey: 'JZLdc9670be1403c05c',\n  baseUrl: 'https://www.dajiala.com/fbmain/monitor/v3/post_history',\n  pagesPerDay: PAGES_PER_DAY,\n  delayMs: 3000,\n  contentDelayMs: 5000\n};\n\nconst FEISHU_CONFIG = {\n  appId: 'cli_a907365bcefbdbd2',\n  appSecret: 'UOnIdOt4xWAgLrzVJUmrQbAOu8Icetjv'\n};\n\nreturn [{\n  json: {\n    config: CONFIG,\n    feishu: FEISHU_CONFIG,\n    currentPage: 1,\n    startPage: 1,\n    endPage: PAGES_PER_DAY,\n    totalPages: TOTAL_PAGES,\n    allArticles: [],\n    totalCost: 0,\n    dayInfo: {\n      currentDay: 1,\n      totalDays: DAYS\n    },\n    phase: 'fetch_list'\n  }\n}];"
+      },
+      "name": "初始化",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.baseUrl }}",
+        "body": {
+          "name": "={{ $json.config.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.config.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst endPage = $input.first().json.endPage;\n\nif (response.code !== 0) {\n  if (response.code === 110 || response.code === 115) {\n    return [{json: {...$input.first().json, hasMore: false}}];\n  }\n  throw new Error(`API错误: ${response.msg}`);\n}\n\nconst articles = response.data || [];\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\n\nconst existingIds = new Set(allArticles.map(a => a.appmsgid));\nconst newArticles = articles.filter(a => !existingIds.has(a.appmsgid)).map(a => ({\n  ...a,\n  content: null,\n  contentFetched: false\n}));\nallArticles.push(...newArticles);\n\nconst hasMore = currentPage < endPage;\nconsole.log(`第 ${currentPage} 页: ${newArticles.length} 篇新文章`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles: newArticles,\n    allArticles,\n    hasMore,\n    nextPage: currentPage + 1,\n    remainMoney: response.remain_money,\n    totalCost: ($input.first().json.totalCost || 0) + (response.cost_money || 0)\n  }\n}];"
+      },
+      "name": "处理文章列表",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "继续获取列表?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {"amount": 3, "unit": "seconds"},
+      "name": "列表延迟",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {...$input.first().json, currentPage: $input.first().json.nextPage}}];"
+      },
+      "name": "下一页列表",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 开始抓取文章内容阶段\nconst data = $input.first().json;\nconst articlesNeedContent = data.allArticles.filter(a => !a.contentFetched);\n\nconsole.log(`共 ${data.allArticles.length} 篇文章，需要抓取内容: ${articlesNeedContent.length} 篇`);\n\nif (articlesNeedContent.length === 0) {\n  return [{\n    json: {\n      ...data,\n      phase: 'create_document',\n      currentArticleIndex: 0\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...data,\n    phase: 'fetch_content',\n    articlesNeedContent,\n    currentArticleIndex: 0,\n    currentArticle: articlesNeedContent[0]\n  }\n}];"
+      },
+      "name": "准备抓取内容",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.currentArticle.url }}",
+        "options": {
+          "timeout": 30000,
+          "response": {"responseFormat": "string"}
+        },
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+        }
+      },
+      "name": "抓取文章内容",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析微信公众号文章内容\nconst html = $input.first().json.data || $input.first().json;\nconst data = $input.first().json;\nconst currentArticle = data.currentArticle;\n\ntry {\n  // 使用正则表达式提取内容\n  let content = '';\n  \n  // 尝试提取rich_media_content中的内容\n  const contentMatch = html.match(/<div class=\"rich_media_content[^\"]*\"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>\\s*<script/i);\n  if (contentMatch) {\n    content = contentMatch[1];\n  } else {\n    // 备用方案：提取id为js_content的元素\n    const jsContentMatch = html.match(/id=\"js_content\"[^>]*>([\\s\\S]*?)<\\/div>/i);\n    if (jsContentMatch) {\n      content = jsContentMatch[1];\n    }\n  }\n  \n  // 清理HTML标签\n  content = content\n    .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&quot;/g, '"')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/\\s+/g, ' ')\n    .trim();\n  \n  // 限制内容长度（飞书有单块内容限制）\n  if (content.length > 4900) {\n    content = content.substring(0, 4900) + '... (内容已截断)';\n  }\n  \n  // 更新文章列表中的内容\n  const allArticles = data.allArticles.map(a => {\n    if (a.appmsgid === currentArticle.appmsgid) {\n      return {...a, content, contentFetched: true};\n    }\n    return a;\n  });\n  \n  console.log(`已抓取: ${currentArticle.title} - 内容长度: ${content.length}`);\n  \n  return [{\n    json: {\n      ...data,\n      allArticles,\n      currentContent: content,\n      contentLength: content.length\n    }\n  }];\n} catch (error) {\n  console.error(`抓取失败: ${currentArticle.title}`, error.message);\n  \n  // 标记为已处理（即使失败）\n  const allArticles = data.allArticles.map(a => {\n    if (a.appmsgid === currentArticle.appmsgid) {\n      return {...a, content: '内容抓取失败: ' + error.message, contentFetched: true};\n    }\n    return a;\n  });\n  \n  return [{\n    json: {\n      ...data,\n      allArticles,\n      currentContent: '内容抓取失败',\n      contentLength: 0\n    }\n  }];\n}"
+      },
+      "name": "解析文章内容",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.currentArticleIndex + 1 < $json.articlesNeedContent.length }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "还有更多文章?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    },
+    {
+      "parameters": {"amount": 5, "unit": "seconds"},
+      "name": "内容抓取延迟",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1850, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst nextIndex = data.currentArticleIndex + 1;\n\nreturn [{\n  json: {\n    ...data,\n    currentArticleIndex: nextIndex,\n    currentArticle: data.articlesNeedContent[nextIndex]\n  }\n}];"
+      },
+      "name": "下一篇文章",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 所有内容抓取完成，准备创建飞书文档\nconst data = $input.first().json;\n\nconsole.log(`所有文章内容抓取完成，共 ${data.allArticles.length} 篇`);\n\nreturn [{\n  json: {\n    ...data,\n    phase: 'create_document'\n  }\n}];"
+      },
+      "name": "内容抓取完成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        "body": {
+          "app_id": "={{ $json.feishu.appId }}",
+          "app_secret": "={{ $json.feishu.appSecret }}"
+        }
+      },
+      "name": "获取飞书Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2250, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 生成飞书文档块\nconst data = $input.first().json;\nconst articles = data.allArticles;\n\nconst blocks = [];\n\n// 文档标题\nblocks.push({\n  block_type: 'page',\n  page: {\n    elements: [{\n      type: 'textRun',\n      textRun: {\n        content: `📰 饼干哥哥AGI - 第${data.dayInfo.currentDay}天文章汇总`\n      }\n    }]\n  }\n});\n\n// 统计信息\nblocks.push({\n  block_type: 'paragraph',\n  paragraph: {\n    elements: [{\n      type: 'textRun',\n      textRun: {\n        content: `抓取时间: ${new Date().toLocaleString()} | 文章数: ${articles.length}篇 | 费用: ${data.totalCost.toFixed(2)}元`\n      }\n    }]\n  }\n});\n\n// 分隔线\nblocks.push({block_type: 'divider', divider: {}});\n\n// 每篇文章\narticles.forEach((article, idx) => {\n  // 文章标题\n  blocks.push({\n    block_type: 'heading2',\n    heading2: {\n      elements: [{\n        type: 'textRun',\n        textRun: {\n          content: `${idx + 1}. ${article.title}`\n        }\n      }]\n    }\n  });\n  \n  // 文章元信息\n  blocks.push({\n    block_type: 'paragraph',\n    paragraph: {\n      elements: [{\n        type: 'textRun',\n        textRun: {\n          content: `🕐 ${article.post_time_str} | ${article.original === 1 ? '原创' : '转载'}`,\n          text_style: {\n            italic: true,\n            text_color: 5\n          }\n        }\n      }]\n    }\n  });\n  \n  // 原文链接\n  blocks.push({\n    block_type: 'paragraph',\n    paragraph: {\n      elements: [{\n        type: 'textRun',\n        textRun: {\n          content: `🔗 阅读原文: ${article.url}`,\n          text_style: {\n            text_color: 1,\n            bold: true\n          }\n        }\n      }]\n    }\n  });\n  \n  // 文章正文内容\n  if (article.content && article.content !== '内容抓取失败') {\n    // 内容分段（每段不超过500字符）\n    const content = article.content;\n    const paragraphs = [];\n    for (let i = 0; i < content.length; i += 500) {\n      paragraphs.push(content.substring(i, i + 500));\n    }\n    \n    paragraphs.forEach(para => {\n      if (para.trim()) {\n        blocks.push({\n          block_type: 'paragraph',\n          paragraph: {\n            elements: [{\n              type: 'textRun',\n              textRun: {\n                content: para\n              }\n            }]\n          }\n        });\n      }\n    });\n  } else {\n    // 摘要作为备选\n  blocks.push({\n    block_type: 'paragraph',\n    paragraph: {\n      elements: [{\n        type: 'textRun',\n        textRun: {\n          content: `摘要: ${article.digest || '暂无摘要'}`,\n              text_style: {\n                text_color: 5\n              }\n        }\n      }]\n    }\n  });\n  }\n  \n  // 文章分隔\n  blocks.push({block_type: 'divider', divider: {}});\n});\n\nreturn [{\n  json: {\n    ...data,\n    tenant_access_token: $input.first().json.tenant_access_token,\n    blocks: blocks.slice(0, 500), // 飞书限制单次最多500块\n    totalBlocks: blocks.length\n  }\n}];"
+      },
+      "name": "生成飞书文档块",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/docx/v1/documents",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.tenant_access_token }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "title": "={{ '📰 饼干哥哥AGI - 第' + $json.dayInfo.currentDay + '天文章汇总' }}"
+        }
+      },
+      "name": "创建飞书文档",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2650, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/docx/v1/documents/{{ $json.data.document.document_id }}/blocks/batch_create",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.tenant_access_token }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "document_id": "={{ $json.data.document.document_id }}",
+          "parent_block_id": "={{ $json.data.document.document_id }}",
+          "children": "={{ JSON.parse(JSON.stringify($json.blocks)) }}"
+        }
+      },
+      "name": "写入文档内容",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2850, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'success',\n    message: `✅ 第 ${data.dayInfo.currentDay} 天完成！\\n📄 文档: ${data.data.document.title}\\n📊 文章: ${data.allArticles.length} 篇\\n💰 费用: ${data.totalCost.toFixed(2)} 元\\n📄 文档ID: ${data.data.document.document_id}`,\n    documentUrl: `https://www.feishu.cn/docx/${data.data.document.document_id}`,\n    documentId: data.data.document.document_id\n  }\n}];"
+      },
+      "name": "完成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3050, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "初始化", "type": "main", "index": 0}]]},
+    "Schedule Trigger": {"main": [[{"node": "初始化", "type": "main", "index": 0}]]},
+    "初始化": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "获取文章列表": {"main": [[{"node": "处理文章列表", "type": "main", "index": 0}]]},
+    "处理文章列表": {"main": [[{"node": "继续获取列表?", "type": "main", "index": 0}]]},
+    "继续获取列表?": {
+      "main": [
+        [{"node": "准备抓取内容", "type": "main", "index": 0}],
+        [{"node": "列表延迟", "type": "main", "index": 0}]
+      ]
+    },
+    "列表延迟": {"main": [[{"node": "下一页列表", "type": "main", "index": 0}]]},
+    "下一页列表": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "准备抓取内容": {"main": [[{"node": "抓取文章内容", "type": "main", "index": 0}]]},
+    "抓取文章内容": {"main": [[{"node": "解析文章内容", "type": "main", "index": 0}]]},
+    "解析文章内容": {"main": [[{"node": "还有更多文章?", "type": "main", "index": 0}]]},
+    "还有更多文章?": {
+      "main": [
+        [{"node": "内容抓取完成", "type": "main", "index": 0}],
+        [{"node": "内容抓取延迟", "type": "main", "index": 0}]
+      ]
+    },
+    "内容抓取延迟": {"main": [[{"node": "下一篇文章", "type": "main", "index": 0}]]},
+    "下一篇文章": {"main": [[{"node": "抓取文章内容", "type": "main", "index": 0}]]},
+    "内容抓取完成": {"main": [[{"node": "获取飞书Token", "type": "main", "index": 0}]]},
+    "获取飞书Token": {"main": [[{"node": "生成飞书文档块", "type": "main", "index": 0}]]},
+    "生成飞书文档块": {"main": [[{"node": "创建飞书文档", "type": "main", "index": 0}]]},
+    "创建飞书文档": {"main": [[{"node": "写入文档内容", "type": "main", "index": 0}]]},
+    "写入文档内容": {"main": [[{"node": "完成", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

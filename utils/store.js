@@ -6,7 +6,14 @@ const STORAGE_KEYS = {
 
 const { timeToMinutes, minutesToTime } = require('./scheduler');
 
+// Counter for unique ID generation
+let idCounter = 0;
+
 class Store {
+  // Generate unique ID with counter to prevent duplicates
+  generateId() {
+    return Date.now().toString() + (++idCounter).toString(36) + Math.random().toString(36).substr(2, 5);
+  }
   getTasks() {
     const tasks = wx.getStorageSync(STORAGE_KEYS.TASKS) || [];
     
@@ -102,7 +109,7 @@ class Store {
   addTask(task) {
     const tasks = this.getTasks();
     
-    task.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    task.id = this.generateId();
     task.createdAt = new Date().toISOString();
     task.status = task.status || 'todo';
     task.priority = task.priority === 'medium' ? 'mid' : (task.priority || 'mid');
@@ -317,8 +324,8 @@ class Store {
       }
     ];
 
-    tasks.forEach(task => {
-      task.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    tasks.forEach((task, index) => {
+      task.id = this.generateId() + '_' + index;
       task.createdAt = new Date().toISOString();
     });
 

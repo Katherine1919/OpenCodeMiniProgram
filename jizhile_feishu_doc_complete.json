@@ -1,0 +1,217 @@
+{
+  "name": "极致了-饼干哥哥AGI-飞书文档自动创建",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "hours", "hours": 9}]}
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// API配置\nconst CONFIG = {\n  accountName: '饼干哥哥AGI',\n  apiKey: 'JZLdc9670be1403c05c',\n  baseUrl: 'https://www.dajiala.com/fbmain/monitor/v3/post_history',\n  maxPages: 5,\n  delayMs: 2000\n};\n\n// 飞书配置（已预填）\nconst FEISHU_CONFIG = {\n  appId: 'cli_a907365bcefbdbd2',\n  appSecret: 'UOnIdOt4xWAgLrzVJUmrQbAOu8Icetjv'\n};\n\nreturn [{\n  json: {\n    config: CONFIG,\n    feishu: FEISHU_CONFIG,\n    currentPage: 1,\n    allArticles: [],\n    totalCost: 0\n  }\n}];"
+      },
+      "name": "配置参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        "body": {
+          "app_id": "={{ $json.feishu.appId }}",
+          "app_secret": "={{ $json.feishu.appSecret }}"
+        }
+      },
+      "name": "获取飞书Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.baseUrl }}",
+        "body": {
+          "name": "={{ $json.config.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.config.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tokenData = $input.all()[0].json;\nconst articleData = $input.all()[1].json;\n\n// 合并数据\nreturn [{\n  json: {\n    ...$input.all()[1].json,\n    feishuToken: tokenData.tenant_access_token\n  }\n}];"
+      },
+      "name": "合并Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nif (response.code !== 0) {\n  if (response.code === 110 || response.code === 115) {\n    return [{json: {...$input.first().json, hasMore: false}}];\n  }\n  throw new Error(`API错误: ${response.msg}`);\n}\n\nconst articles = response.data || [];\nconst totalPage = response.total_page || 1;\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\nconst maxPages = $input.first().json.config.maxPages;\n\n// 去重\nconst existingIds = new Set(allArticles.map(a => a.appmsgid));\nconst newArticles = articles.filter(a => !existingIds.has(a.appmsgid));\nallArticles.push(...newArticles);\n\nconst hasMore = currentPage < Math.min(totalPage, maxPages);\n\nconsole.log(`第 ${currentPage} 页: ${newArticles.length} 篇新文章，累计 ${allArticles.length} 篇`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles: newArticles,\n    allArticles,\n    totalPages: totalPage,\n    hasMore,\n    nextPage: currentPage + 1,\n    remainMoney: response.remain_money,\n    totalCost: ($input.first().json.totalCost || 0) + (response.cost_money || 0)\n  }\n}];"
+      },
+      "name": "处理API数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "继续翻页",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {"amount": 2, "unit": "seconds"},
+      "name": "延迟2秒",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1050, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {...$input.first().json, currentPage: $input.first().json.nextPage}}];"
+      },
+      "name": "下一页",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 生成文档内容\nconst data = $input.first().json;\nconst articles = data.allArticles;\n\n// 按日期分组\nconst grouped = {};\narticles.forEach(article => {\n  const date = article.post_time_str.split(' ')[0];\n  if (!grouped[date]) grouped[date] = [];\n  grouped[date].push(article);\n});\n\n// 生成Markdown内容\nlet content = `# 📝 饼干哥哥AGI 文章汇总\\n\\n`;\ncontent += `> 📊 **统计信息**\\n`;\ncontent += `> - 抓取时间: ${new Date().toLocaleString()}\\n`;\ncontent += `> - 文章总数: ${articles.length} 篇\\n`;\ncontent += `> - 总费用: ${data.totalCost.toFixed(2)} 元\\n`;\ncontent += `> - 账户余额: ${data.remainMoney} 元\\n\\n`;\ncontent += `---\\n\\n`;\n\n// 按日期倒序\nObject.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).forEach(date => {\n  content += `## 📅 ${date}\\n\\n`;\n  grouped[date].forEach((article, idx) => {\n    content += `### ${idx + 1}. ${article.title}\\n\\n`;\n    content += `- 📝 **摘要**: ${article.digest || '暂无摘要'}\\n`;\n    content += `- ⏰ **发布时间**: ${article.post_time_str}\\n`;\n    content += `- 🔗 **原文链接**: [点击阅读](${article.url})\\n`;\n    content += `- 🖼️ **封面**: ![封面](${article.cover_url})\\n`;\n    content += `- 🏷️ **类型**: ${article.original === 1 ? '✅ 原创' : article.original === 2 ? '🔄 转载' : '❓ 未声明'}\\n`;\n    content += `- 📍 **位置**: 第${article.position}条\\n\\n`;\n  });\n  content += `---\\n\\n`;\n});\n\nreturn [{\n  json: {\n    ...data,\n    docTitle: `饼干哥哥AGI-文章汇总-${new Date().toISOString().split('T')[0]}`,\n    docContent: content,\n    articleCount: articles.length\n  }\n}];"
+      },
+      "name": "生成文档内容",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/drive/v1/files/create",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.feishuToken }}"
+        },
+        "body": {
+          "name": "={{ $json.docTitle }}",
+          "type": "doc"
+        }
+      },
+      "name": "创建飞书文档",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst createResponse = $input.all()[1]?.json || {};\n\n// 获取文档token\nconst docToken = createResponse.data?.token || createResponse.token;\n\nif (!docToken) {\n  console.log('创建文档响应:', JSON.stringify(createResponse, null, 2));\n  throw new Error('无法获取文档token');\n}\n\nreturn [{\n  json: {\n    ...data,\n    docToken,\n    docUrl: `https://www.feishu.cn/docx/${docToken}`\n  }\n}];"
+      },
+      "name": "获取文档Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/docx/v1/documents/{{ $json.docToken }}/blocks/batch_create",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.feishuToken }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "children": [
+            {
+              "block_type": 2,
+              "text": {
+                "elements": [
+                  {
+                    "text_run": {
+                      "content": "={{ $json.docContent.substring(0, 45000) }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "name": "写入文档内容",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1850, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'success',\n    docTitle: data.docTitle,\n    docUrl: data.docUrl,\n    articleCount: data.articleCount,\n    totalCost: data.totalCost,\n    message: `✅ 成功创建飞书文档！\\n📄 标题: ${data.docTitle}\\n🔗 链接: ${data.docUrl}\\n📊 文章数: ${data.articleCount} 篇\\n💰 费用: ${data.totalCost.toFixed(2)} 元`\n  }\n}];"
+      },
+      "name": "完成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 500]
+    },
+    {
+      "parameters": {
+        "fileName": "=/home/admin/.openclaw/workspace/feishu_doc_result.json",
+        "data": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "name": "保存结果",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [2250, 500]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {"main": [[{"node": "配置参数", "type": "main", "index": 0}]]},
+    "Schedule Trigger": {"main": [[{"node": "配置参数", "type": "main", "index": 0}]]},
+    "配置参数": {
+      "main": [
+        [{"node": "获取飞书Token", "type": "main", "index": 0}],
+        [{"node": "获取文章列表", "type": "main", "index": 0}]
+      ]
+    },
+    "获取飞书Token": {"main": [[{"node": "合并Token", "type": "main", "index": 0}]]},
+    "获取文章列表": {"main": [[{"node": "合并Token", "type": "main", "index": 0}]]},
+    "合并Token": {"main": [[{"node": "处理API数据", "type": "main", "index": 0}]]},
+    "处理API数据": {"main": [[{"node": "继续翻页", "type": "main", "index": 0}]]},
+    "继续翻页": {
+      "main": [
+        [{"node": "生成文档内容", "type": "main", "index": 0}],
+        [{"node": "延迟2秒", "type": "main", "index": 0}]
+      ]
+    },
+    "延迟2秒": {"main": [[{"node": "下一页", "type": "main", "index": 0}]]},
+    "下一页": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "生成文档内容": {"main": [[{"node": "创建飞书文档", "type": "main", "index": 0}]]},
+    "创建飞书文档": {"main": [[{"node": "获取文档Token", "type": "main", "index": 0}]]},
+    "获取文档Token": {"main": [[{"node": "写入文档内容", "type": "main", "index": 0}]]},
+    "写入文档内容": {"main": [[{"node": "完成", "type": "main", "index": 0}]]},
+    "完成": {"main": [[{"node": "保存结果", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

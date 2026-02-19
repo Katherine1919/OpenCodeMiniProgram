@@ -39,7 +39,7 @@ Page({
     const dateStr = `${year}-${month}-${day}`;
 
     const scheduleItems = store.getSchedule(dateStr);
-    const templates = store.getTemplates();
+    const templates = store.getTimeTemplates();
 
     const taskItems = scheduleItems.filter(it => it.kind === 'task');
     const doneCount = taskItems.filter(it => it.status === 'done').length;

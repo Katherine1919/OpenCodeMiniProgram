@@ -1,0 +1,237 @@
+{
+  "name": "极致了-饼干哥哥AGI-6天分批抓取",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "hours", "hours": 9}]}
+      },
+      "name": "Schedule Trigger-每天9点",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// 6天分批抓取配置\n// ========================================\nconst TOTAL_PAGES = 111;     // 总共111页\nconst DAYS = 6;              // 分6天抓取\nconst PAGES_PER_DAY = 19;    // 每天19页\n\n// 极致了API配置\nconst CONFIG = {\n  accountName: '饼干哥哥AGI',\n  apiKey: 'JZLdc9670be1403c05c',\n  baseUrl: 'https://www.dajiala.com/fbmain/monitor/v3/post_history',\n  pagesPerDay: PAGES_PER_DAY,\n  delayMs: 3000               // 3秒间隔（更安全）\n};\n\n// 飞书应用配置（已填写）\nconst FEISHU_CONFIG = {\n  appId: 'cli_a907365bcefbdbd2',\n  appSecret: 'UOnIdOt4xWAgLrzVJUmrQbAOu8Icetjv'\n};\n\n// 计算今天应该从第几页开始\nconst today = new Date();\nconst startDay = 0;  // 第0天开始，每次执行会自动计算\n\n// 从文件读取上次抓取状态（如果有）\nlet lastPage = 0;\n\nreturn [{\n  json: {\n    config: CONFIG,\n    feishu: FEISHU_CONFIG,\n    currentPage: lastPage + 1,\n    startPage: lastPage + 1,\n    endPage: Math.min(lastPage + PAGES_PER_DAY, TOTAL_PAGES),\n    totalPages: TOTAL_PAGES,\n    allArticles: [],\n    totalCost: 0,\n    dayInfo: {\n      currentDay: Math.floor(lastPage / PAGES_PER_DAY) + 1,\n      totalDays: DAYS,\n      pagesToday: PAGES_PER_DAY\n    }\n  }\n}];"
+      },
+      "name": "初始化-6天计划",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        "body": {
+          "app_id": "={{ $json.feishu.appId }}",
+          "app_secret": "={{ $json.feishu.appSecret }}"
+        }
+      },
+      "name": "获取飞书Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.baseUrl }}",
+        "body": {
+          "name": "={{ $json.config.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.config.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "极致了API-获取文章",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 合并飞书Token和文章数据\nconst tokenData = $input.all()[0].json;\nconst articleData = $input.all()[1].json;\n\nreturn [{\n  json: {\n    ...articleData,\n    feishuToken: tokenData.tenant_access_token\n  }\n}];"
+      },
+      "name": "合并数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst endPage = $input.first().json.endPage;\n\nif (response.code !== 0) {\n  if (response.code === 110) {\n    console.log('✅ 已到达最后一页');\n    return [{json: {...$input.first().json, hasMore: false, isComplete: true}}];\n  }\n  if (response.code === 115) {\n    console.log('✅ 后续页面文章已删除');\n    return [{json: {...$input.first().json, hasMore: false}}];\n  }\n  throw new Error(`API错误 [${response.code}]: ${response.msg}`);\n}\n\nconst articles = response.data || [];\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\n\n// 去重\nconst existingIds = new Set(allArticles.map(a => a.appmsgid));\nconst newArticles = articles.filter(a => !existingIds.has(a.appmsgid));\nallArticles.push(...newArticles);\n\n// 检查是否完成今天的任务\nconst hasMore = currentPage < endPage;\nconst todayProgress = currentPage - $input.first().json.startPage + 1;\nconst todayTotal = $input.first().json.endPage - $input.first().json.startPage + 1;\n\nconsole.log(`📄 第 ${currentPage} 页: ${newArticles.length} 篇新文章`);\nconsole.log(`📊 今日进度: ${todayProgress}/${todayTotal} 页 (${Math.round(todayProgress/todayTotal*100)}%)`);\nconsole.log(`📈 总计: ${allArticles.length} 篇文章`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles: newArticles,\n    allArticles,\n    hasMore,\n    nextPage: currentPage + 1,\n    remainMoney: response.remain_money,\n    totalCost: ($input.first().json.totalCost || 0) + (response.cost_money || 0)\n  }\n}];"
+      },
+      "name": "处理数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "继续今天任务?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {"amount": 3, "unit": "seconds"},
+      "name": "延迟3秒",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1050, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {...$input.first().json, currentPage: $input.first().json.nextPage}}];"
+      },
+      "name": "下一页",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// 生成飞书文档内容\n// ========================================\nconst data = $input.first().json;\nconst articles = data.allArticles;\n\n// 按日期分组\nconst grouped = {};\narticles.forEach(article => {\n  const date = article.post_time_str.split(' ')[0];\n  if (!grouped[date]) grouped[date] = [];\n  grouped[date].push(article);\n});\n\n// 生成Markdown\nlet content = `# 📰 饼干哥哥AGI - 文章汇总\\n\\n`;\ncontent += `## 📊 统计信息\\n\\n`;\ncontent += `- **抓取时间**: ${new Date().toLocaleString()}\\n`;\ncontent += `- **今日抓取**: ${data.endPage - data.startPage + 1} 页\\n`;\ncontent += `- **文章总数**: ${articles.length} 篇\\n`;\ncontent += `- **总费用**: ${data.totalCost.toFixed(2)} 元\\n`;\ncontent += `- **账户余额**: ${data.remainMoney} 元\\n`;\ncontent += `- **抓取进度**: 第 ${data.dayInfo.currentDay}/${data.dayInfo.totalDays} 天\\n\\n`;\ncontent += `---\\n\\n`;\n\n// 按日期倒序排列\nconst sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));\n\nsortedDates.forEach(date => {\n  content += `## 📅 ${date}\\n\\n`;\n  grouped[date].forEach((article, idx) => {\n    content += `### ${idx + 1}. ${article.title}\\n\\n`;\n    content += `- 📝 **摘要**: ${article.digest || '暂无摘要'}\\n`;\n    content += `- ⏰ **发布时间**: ${article.post_time_str}\\n`;\n    content += `- 🔗 **原文链接**: [点击阅读](${article.url})\\n`;\n    content += `- 🖼️ **封面**: ${article.cover_url}\\n`;\n    content += `- ✅ **原创**: ${article.original === 1 ? '是' : '否'}\\n`;\n    content += `- 📍 **位置**: 第${article.position}条\\n\\n`;\n  });\n  content += `---\\n\\n`;\n});\n\n// 生成文档标题\nconst today = new Date().toISOString().split('T')[0];\nconst docTitle = `饼干哥哥AGI-文章汇总-第${data.dayInfo.currentDay}天-${today}`;\n\nreturn [{\n  json: {\n    ...data,\n    docTitle,\n    docContent: content,\n    articleCount: articles.length\n  }\n}];"
+      },
+      "name": "生成文档",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/drive/v1/files/create",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.feishuToken }}"
+        },
+        "body": {
+          "name": "={{ $json.docTitle }}",
+          "type": "doc"
+        }
+      },
+      "name": "创建飞书文档",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst createResponse = $input.all()[1]?.json || {};\n\nconst docToken = createResponse.data?.token || createResponse.token;\n\nif (!docToken) {\n  console.error('创建文档响应:', JSON.stringify(createResponse, null, 2));\n  throw new Error('无法获取文档token');\n}\n\nconsole.log(`✅ 文档创建成功: ${docToken}`);\n\nreturn [{\n  json: {\n    ...data,\n    docToken,\n    docUrl: `https://www.feishu.cn/docx/${docToken}`\n  }\n}];"
+      },
+      "name": "获取文档Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/docx/v1/documents/{{ $json.docToken }}/blocks/batch_create",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.feishuToken }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "children": [
+            {
+              "block_type": 2,
+              "text": {
+                "elements": [
+                  {
+                    "text_run": {
+                      "content": "={{ $json.docContent.substring(0, 48000) }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "name": "写入内容",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1850, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://open.feishu.cn/open-apis/im/v1/messages",
+        "headers": {
+          "Authorization": "=Bearer {{ $json.feishuToken }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "receive_id": "=ou_eda8413c27b1c73b4bac9d2a66fcbc7c",
+          "msg_type": "interactive",
+          "content": "={{ JSON.stringify({\n            card: {\n              config: { wide_screen_mode: true },\n              header: {\n                title: { tag: 'plain_text', content: '📰 饼干哥哥AGI - 抓取完成' },\n                template: 'green'\n              },\n              elements: [\n                {\n                  tag: 'div',\n                  text: {\n                    tag: 'lark_md',\n                    content: `**第 ${$json.dayInfo.currentDay} 天抓取完成！**\\n\\n` +\n                      `📄 文档标题: ${$json.docTitle}\\n` +\n                      `🔗 文档链接: [点击查看](${$json.docUrl})\\n` +\n                      `📊 今日抓取: ${$json.endPage - $json.startPage + 1} 页\\n` +\n                      `📰 文章总数: ${$json.articleCount} 篇\\n` +\n                      `💰 今日费用: ${$json.totalCost.toFixed(2)} 元\\n` +\n                      `💳 账户余额: ${$json.remainMoney} 元\\n\\n` +\n                      `⏰ 明天继续抓取第 ${$json.dayInfo.currentDay + 1} 天内容`\n                  }\n                }\n              ]\n            }\n          }) }}"
+        }
+      },
+      "name": "发送通知",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2050, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// 保存进度到文件\nconst progress = {\n  lastPage: data.endPage,\n  totalArticles: data.articleCount,\n  totalCost: data.totalCost,\n  lastRun: new Date().toISOString(),\n  day: data.dayInfo.currentDay,\n  docUrl: data.docUrl\n};\n\nreturn [{\n  json: {\n    ...data,\n    progress,\n    status: 'success',\n    message: `✅ 第 ${data.dayInfo.currentDay} 天完成！\\n📄 文档: ${data.docTitle}\\n🔗 链接: ${data.docUrl}\\n📊 文章: ${data.articleCount} 篇\\n💰 费用: ${data.totalCost.toFixed(2)} 元`\n  }\n}];"
+      },
+      "name": "完成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 500]
+    },
+    {
+      "parameters": {
+        "fileName": "=/home/admin/.openclaw/workspace/progress_day{{ $json.dayInfo.currentDay }}.json",
+        "data": "={{ JSON.stringify($json.progress, null, 2) }}"
+      },
+      "name": "保存进度",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [2450, 500]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {"main": [[{"node": "初始化-6天计划", "type": "main", "index": 0}]]},
+    "Schedule Trigger-每天9点": {"main": [[{"node": "初始化-6天计划", "type": "main", "index": 0}]]},
+    "初始化-6天计划": {
+      "main": [
+        [{"node": "获取飞书Token", "type": "main", "index": 0}],
+        [{"node": "极致了API-获取文章", "type": "main", "index": 0}]
+      ]
+    },
+    "获取飞书Token": {"main": [[{"node": "合并数据", "type": "main", "index": 0}]]},
+    "极致了API-获取文章": {"main": [[{"node": "合并数据", "type": "main", "index": 0}]]},
+    "合并数据": {"main": [[{"node": "处理数据", "type": "main", "index": 0}]]},
+    "处理数据": {"main": [[{"node": "继续今天任务?", "type": "main", "index": 0}]]},
+    "继续今天任务?": {
+      "main": [
+        [{"node": "生成文档", "type": "main", "index": 0}],
+        [{"node": "延迟3秒", "type": "main", "index": 0}]
+      ]
+    },
+    "延迟3秒": {"main": [[{"node": "下一页", "type": "main", "index": 0}]]},
+    "下一页": {"main": [[{"node": "极致了API-获取文章", "type": "main", "index": 0}]]},
+    "生成文档": {"main": [[{"node": "创建飞书文档", "type": "main", "index": 0}]]},
+    "创建飞书文档": {"main": [[{"node": "获取文档Token", "type": "main", "index": 0}]]},
+    "获取文档Token": {"main": [[{"node": "写入内容", "type": "main", "index": 0}]]},
+    "写入内容": {"main": [[{"node": "发送通知", "type": "main", "index": 0}]]},
+    "发送通知": {"main": [[{"node": "完成", "type": "main", "index": 0}]]},
+    "完成": {"main": [[{"node": "保存进度", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

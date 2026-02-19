@@ -1,0 +1,137 @@
+{
+  "name": "极致了-饼干哥哥AGI-完整监控工作流",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hours": 9}]
+        }
+      },
+      "name": "Schedule Trigger-每天9点",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 极致了API配置\nconst CONFIG = {\n  accountName: '饼干哥哥AGI',\n  apiKey: 'JZLdc9670be1403c05c',\n  baseUrl: 'https://www.dajiala.com/fbmain/monitor/v3/post_history',\n  maxPages: 10,  // 每次抓取10页，可自行调整\n  delayMs: 1000  // 请求间隔1秒\n};\n\nreturn [{\n  json: {\n    config: CONFIG,\n    currentPage: 1,\n    allArticles: [],\n    totalCost: 0\n  }\n}];"
+      },
+      "name": "初始化配置",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.baseUrl }}",
+        "body": {
+          "name": "={{ $json.config.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.config.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "极致了API-获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// API错误处理\nif (response.code !== 0) {\n  if (response.code === 110) {\n    console.log('✅ 翻页结束，没有更多文章');\n    return [{json: {...$input.first().json, hasMore: false, endReason: 'no_more_pages'}}];\n  }\n  if (response.code === 115) {\n    console.log('✅ 后续页面文章已全部删除');\n    return [{json: {...$input.first().json, hasMore: false, endReason: 'all_deleted'}}];\n  }\n  throw new Error(`API错误 [${response.code}]: ${response.msg}`);\n}\n\nconst articles = response.data || [];\nconst totalPage = response.total_page || 1;\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\nconst maxPages = $input.first().json.config.maxPages;\n\n// 去重检查（基于appmsgid）\nconst existingIds = new Set(allArticles.map(a => a.appmsgid));\nconst newArticles = articles.filter(a => !existingIds.has(a.appmsgid));\nallArticles.push(...newArticles);\n\n// 更新总费用\nconst totalCost = ($input.first().json.totalCost || 0) + (response.cost_money || 0);\n\n// 判断是否继续\nconst hasMore = currentPage < Math.min(totalPage, maxPages);\nconst progress = Math.round((currentPage / Math.min(totalPage, maxPages)) * 100);\n\nconsole.log(`✅ 第 ${currentPage}/${totalPage} 页: ${articles.length} 篇文章 (新增 ${newArticles.length} 篇)`);\nconsole.log(`📊 进度: ${progress}% | 累计: ${allArticles.length} 篇 | 费用: ${totalCost.toFixed(2)}元`);\nconsole.log(`💰 余额: ${response.remain_money}元`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles: newArticles,\n    allArticles,\n    totalPages: totalPage,\n    hasMore,\n    nextPage: currentPage + 1,\n    progress,\n    totalCost,\n    remainMoney: response.remain_money,\n    accountInfo: {\n      nickname: response.mp_nickname,\n      wxid: response.mp_wxid,\n      ghid: response.mp_ghid,\n      totalNum: response.total_num,\n      publishCount: response.publish_count,\n      masssendCount: response.masssend_count\n    }\n  }\n}];"
+      },
+      "name": "处理API返回数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "是否继续翻页?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "name": "延迟1秒",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$input.first().json,\n    currentPage: $input.first().json.nextPage\n  }\n}];"
+      },
+      "name": "准备下一页请求",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 构建最终输出\nconst data = $input.first().json;\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-');\n\nconst output = {\n  metadata: {\n    accountName: data.config.accountName,\n    fetchTime: new Date().toISOString(),\n    totalPages: data.totalPages,\n    fetchedPages: data.currentPage - 1,\n    totalArticles: data.allArticles.length,\n    totalCost: data.totalCost,\n    remainMoney: data.remainMoney,\n    accountInfo: data.accountInfo\n  },\n  articles: data.allArticles.map((article, index) => ({\n    index: index + 1,\n    title: article.title,\n    url: article.url,\n    publishTime: article.post_time_str,\n    timestamp: article.post_time,\n    digest: article.digest,\n    coverUrl: article.cover_url,\n    isOriginal: article.original === 1,\n    isOriginalText: article.original === 1 ? '原创' : article.original === 2 ? '转载' : '未声明',\n    position: article.position,\n    positionText: ['', '头条', '二条', '三条', '四条', '五条', '六条', '七条', '八条'][article.position] || article.position,\n    type: article.item_show_type === 0 ? '图文' : article.item_show_type === 5 ? '视频' : article.item_show_type === 10 ? '文字' : '其他',\n    status: article.msg_status === 2 ? '正常' : article.msg_status === 7 ? '已删除' : '异常',\n    appmsgid: article.appmsgid\n  }))\n};\n\nconsole.log(`🎉 抓取完成! 共 ${output.articles.length} 篇文章`);\nconsole.log(`💰 总费用: ${output.metadata.totalCost.toFixed(2)}元`);\n\nreturn [{json: output}];"
+      },
+      "name": "构建最终输出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "fileName": "=/home/admin/.openclaw/workspace/binggan_articles_{{ Date.now() }}.json",
+        "data": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "name": "保存到JSON文件",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "content": "={{ $json.data }}",
+        "options": {
+          "statusCode": 200,
+          "headers": {"Content-Type": "application/json"}
+        }
+      },
+      "name": "返回结果",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1650, 400]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {"main": [[{"node": "初始化配置", "type": "main", "index": 0}]]},
+    "Schedule Trigger-每天9点": {"main": [[{"node": "初始化配置", "type": "main", "index": 0}]]},
+    "初始化配置": {"main": [[{"node": "极致了API-获取文章列表", "type": "main", "index": 0}]]},
+    "极致了API-获取文章列表": {"main": [[{"node": "处理API返回数据", "type": "main", "index": 0}]]},
+    "处理API返回数据": {"main": [[{"node": "是否继续翻页?", "type": "main", "index": 0}]]},
+    "是否继续翻页?": {
+      "main": [
+        [{"node": "构建最终输出", "type": "main", "index": 0}],
+        [{"node": "延迟1秒", "type": "main", "index": 0}]
+      ]
+    },
+    "延迟1秒": {"main": [[{"node": "准备下一页请求", "type": "main", "index": 0}]]},
+    "准备下一页请求": {"main": [[{"node": "极致了API-获取文章列表", "type": "main", "index": 0}]]},
+    "构建最终输出": {"main": [[{"node": "保存到JSON文件", "type": "main", "index": 0}]]},
+    "保存到JSON文件": {"main": [[{"node": "返回结果", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

@@ -1,0 +1,146 @@
+{
+  "name": "极致了-饼干哥哥AGI-完整抓取+AI摘要",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hours": 9}]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 配置参数\nconst accountName = '饼干哥哥AGI';\nconst apiKey = 'JZLdc9670be1403c05cJZLdc9670be1403c05c';\nconst baseUrl = 'https://www.dajiala.com/fbmain/monitor/v3/post_history';\nreturn [{json: {accountName, apiKey, baseUrl, currentPage: 1, allArticles: [], maxPages: 100}}];"
+      },
+      "name": "初始化配置",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.baseUrl }}",
+        "body": {
+          "name": "={{ $json.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.apiKey }}"
+        },
+        "options": {"timeout": 30000}
+      },
+      "name": "获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nif (response.code !== 0) {\n  if (response.code === 110) {\n    return [{json: {...$input.first().json, hasMore: false}}];\n  }\n  throw new Error(`API错误: ${response.msg}`);\n}\nconst articles = response.data || [];\nconst totalPage = response.total_page || 1;\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\nallArticles.push(...articles);\nconst hasMore = currentPage < totalPage && currentPage < $input.first().json.maxPages;\nconsole.log(`第 ${currentPage} 页: ${articles.length} 篇, 累计 ${allArticles.length} 篇`);\nreturn [{json: {...$input.first().json, articles, allArticles, totalPages: totalPage, hasMore, nextPage: currentPage + 1}}];"
+      },
+      "name": "处理API返回",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"leftValue": "={{ $json.hasMore }}", "rightValue": "true", "operator": "equals"}]
+        }
+      },
+      "name": "还有下一页",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {...$input.first().json, currentPage: $input.first().json.nextPage}}];"
+      },
+      "name": "准备下一页",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn data.allArticles.map((article, index) => ({\n  json: {\n    articleIndex: index,\n    article: {\n      title: article.title,\n      url: article.url,\n      publishTime: article.post_time_str,\n      digest: article.digest,\n      coverUrl: article.cover_url\n    }\n  }\n}));"
+      },
+      "name": "拆分文章",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {"batchSize": 1},
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.article.url }}",
+        "options": {"timeout": 30000}
+      },
+      "name": "抓取文章内容",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.data || '';\nconst title = $input.first().json.article.title;\nlet content = html.replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '').replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '').replace(/<[^>]+>/g, '\\n').replace(/\\n\\n+/g, '\\n\\n').trim();\nif (content.length > 5000) content = content.substring(0, 5000) + '...';\nreturn [{json: {...$input.first().json, markdownContent: `# ${title}\\n\\n${content}`, contentLength: content.length}}];"
+      },
+      "name": "HTML转Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nreturn [{\n  json: {\n    title: input.article.title,\n    url: input.article.url,\n    publishTime: input.article.publishTime,\n    digest: input.article.digest,\n    content: input.markdownContent,\n    contentLength: input.contentLength,\n    fetchedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "合并结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "fileName": "=/home/admin/.openclaw/workspace/binggan_articles_{{ Date.now() }}.json",
+        "data": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "name": "保存到JSON文件",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {"main": [[{"node": "初始化配置", "type": "main", "index": 0}]]},
+    "Schedule Trigger": {"main": [[{"node": "初始化配置", "type": "main", "index": 0}]]},
+    "初始化配置": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "获取文章列表": {"main": [[{"node": "处理API返回", "type": "main", "index": 0}]]},
+    "处理API返回": {"main": [[{"node": "还有下一页", "type": "main", "index": 0}]]},
+    "还有下一页": {"main": [[{"node": "拆分文章", "type": "main", "index": 0}], [{"node": "准备下一页", "type": "main", "index": 0}]]},
+    "准备下一页": {"main": [[{"node": "获取文章列表", "type": "main", "index": 0}]]},
+    "拆分文章": {"main": [[{"node": "Loop Over Items", "type": "main", "index": 0}]]},
+    "Loop Over Items": {"main": [[{"node": "抓取文章内容", "type": "main", "index": 0}]]},
+    "抓取文章内容": {"main": [[{"node": "HTML转Markdown", "type": "main", "index": 0}]]},
+    "HTML转Markdown": {"main": [[{"node": "合并结果", "type": "main", "index": 0}]]},
+    "合并结果": {"main": [[{"node": "保存到JSON文件", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

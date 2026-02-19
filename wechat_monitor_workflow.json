@@ -1,0 +1,228 @@
+{
+  "name": "极致了-公众号文章抓取-饼干哥哥AGI",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 初始化参数\nconst accountName = '饼干哥哥AGI';\nconst apiKey = 'JZLdc9670be1403c05cJZLdc9670be1403c05c';\nconst baseUrl = 'https://www.dajiala.com/fbmain/monitor/v3/post_history';\n\nreturn [{\n  json: {\n    accountName,\n    apiKey,\n    baseUrl,\n    currentPage: 1,\n    allArticles: [],\n    totalPages: 0\n  }\n}];"
+      },
+      "id": "init",
+      "name": "初始化参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.baseUrl }}",
+        "body": {
+          "name": "={{ $json.accountName }}",
+          "page": "={{ $json.currentPage }}",
+          "key": "={{ $json.apiKey }}"
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fetch",
+      "name": "获取文章列表",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 处理API返回的数据\nconst response = $input.first().json;\n\nif (response.code !== 0) {\n  throw new Error(`API错误: ${response.msg} (code: ${response.code})`);\n}\n\nconst articles = response.data || [];\nconst totalPage = response.total_page || 1;\nconst currentPage = $input.first().json.currentPage;\nconst allArticles = $input.first().json.allArticles || [];\n\n// 合并文章\nallArticles.push(...articles);\n\n// 计算进度\nconst progress = Math.round((currentPage / totalPage) * 100);\n\nconsole.log(`✅ 第 ${currentPage}/${totalPage} 页获取成功，本页 ${articles.length} 篇文章，累计 ${allArticles.length} 篇 (${progress}%)`);\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    articles,\n    allArticles,\n    totalPages: totalPage,\n    hasMore: currentPage < totalPage,\n    nextPage: currentPage + 1,\n    progress,\n    accountInfo: {\n      nickname: response.mp_nickname,\n      wxid: response.mp_wxid,\n      ghid: response.mp_ghid,\n      totalNum: response.total_num,\n      remainMoney: response.remain_money,\n      costMoney: response.cost_money\n    }\n  }\n}];"
+      },
+      "id": "process",
+      "name": "处理返回数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-more",
+              "leftValue": "={{ $json.hasMore }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check",
+      "name": "是否还有更多?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 准备下一页请求\nconst current = $input.first().json;\n\nreturn [{\n  json: {\n    ...current,\n    currentPage: current.nextPage\n  }\n}];"
+      },
+      "id": "next",
+      "name": "准备下一页",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 构建最终输出\nconst data = $input.first().json;\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-');\n\nconst output = {\n  metadata: {\n    accountName: data.accountName,\n    fetchTime: new Date().toISOString(),\n    totalPages: data.totalPages,\n    currentPage: data.currentPage - 1,\n    totalArticles: data.allArticles.length,\n    accountInfo: data.accountInfo\n  },\n  articles: data.allArticles.map((article, index) => ({\n    index: index + 1,\n    title: article.title,\n    url: article.url,\n    publishTime: article.post_time_str,\n    timestamp: article.post_time,\n    digest: article.digest,\n    coverUrl: article.cover_url,\n    isOriginal: article.original === 1,\n    position: article.position,\n    type: article.item_show_type === 0 ? '图文' : '其他',\n    status: article.msg_status === 2 ? '正常' : '异常'\n  }))\n};\n\nconsole.log(`🎉 抓取完成! 共 ${output.articles.length} 篇文章`);\n\nreturn [{ json: output }];"
+      },
+      "id": "finalize",
+      "name": "构建最终输出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fileName": "=/tmp/binggan_articles_{{ Date.now() }}.json",
+        "data": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "useRawData": true
+        }
+      },
+      "id": "save",
+      "name": "保存到文件",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "content": "={{ $json.data }}",
+        "options": {
+          "filename": "binggan_articles_{{ Date.now() }}.json"
+        }
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "初始化参数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "初始化参数": {
+      "main": [
+        [
+          {
+            "node": "获取文章列表",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获取文章列表": {
+      "main": [
+        [
+          {
+            "node": "处理返回数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "处理返回数据": {
+      "main": [
+        [
+          {
+            "node": "是否还有更多?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "是否还有更多?": {
+      "main": [
+        [
+          {
+            "node": "构建最终输出",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "准备下一页",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备下一页": {
+      "main": [
+        [
+          {
+            "node": "获取文章列表",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建最终输出": {
+      "main": [
+        [
+          {
+            "node": "保存到文件",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存到文件": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
