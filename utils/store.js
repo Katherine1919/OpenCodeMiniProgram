@@ -46,7 +46,14 @@ class Store {
   }
 
   saveTasks(tasks) {
-    wx.setStorageSync(STORAGE_KEYS.TASKS, tasks);
+    try {
+      wx.setStorageSync(STORAGE_KEYS.TASKS, tasks);
+      return true;
+    } catch (error) {
+      console.error('保存任务失败:', error);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      return false;
+    }
   }
 
   getDayStates() {
@@ -54,7 +61,14 @@ class Store {
   }
 
   saveDayStates(dayStates) {
-    wx.setStorageSync(STORAGE_KEYS.DAY_STATES, dayStates);
+    try {
+      wx.setStorageSync(STORAGE_KEYS.DAY_STATES, dayStates);
+      return true;
+    } catch (error) {
+      console.error('保存日期状态失败:', error);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      return false;
+    }
   }
 
   getDayState(dateStr) {
@@ -63,9 +77,14 @@ class Store {
   }
 
   saveDayState(dateStr, dayState) {
-    const states = this.getDayStates();
-    states[dateStr] = dayState;
-    this.saveDayStates(states);
+    try {
+      const states = this.getDayStates();
+      states[dateStr] = dayState;
+      return this.saveDayStates(states);
+    } catch (error) {
+      console.error(`保存日期状态失败 (${dateStr}):`, error);
+      return false;
+    }
   }
 
   getSchedule(dateStr) {
@@ -103,7 +122,14 @@ class Store {
   }
 
   saveTimeTemplates(templates) {
-    wx.setStorageSync(STORAGE_KEYS.TIME_TEMPLATES, templates);
+    try {
+      wx.setStorageSync(STORAGE_KEYS.TIME_TEMPLATES, templates);
+      return true;
+    } catch (error) {
+      console.error('保存时间模板失败:', error);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      return false;
+    }
   }
 
   addTask(task) {
@@ -213,6 +239,11 @@ class Store {
           merged.endTime = minutesToTime(endMins);
         }
       }
+    } else {
+      // 当切换为非固定任务时，清理固定任务相关字段
+      merged.startTime = null;
+      merged.endTime = null;
+      merged.repeatRule = null;
     }
     
     tasks[index] = merged;

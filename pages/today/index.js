@@ -1,6 +1,18 @@
 const store = require('../../utils/store');
 const { timeToMinutes, minutesToTime } = require('../../utils/scheduler');
 
+// 防抖函数
+function debounce(fn, delay = 500) {
+  let timer = null;
+  return function(...args) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+    }, delay);
+    return fn.apply(this, args);
+  };
+}
+
 Page({
   data: {
     dateDisplay: '',
@@ -48,7 +60,7 @@ Page({
     const doneCount = taskItems.filter(it => it.status === 'done').length;
     const completionRate = taskItems.length > 0 ? Math.round((doneCount / taskItems.length) * 100) : 0;
     
-    const totalMinutes = taskItems.reduce((sum, it) => sum + it.minutes, 0);
+    const totalMinutes = taskItems.filter(it => it.status === 'done').reduce((sum, it) => sum + it.minutes, 0);
     
     const nowMinutes = today.getHours() * 60 + today.getMinutes();
     const nextTask = taskItems.find(it => 

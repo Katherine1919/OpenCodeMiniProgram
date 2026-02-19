@@ -116,7 +116,22 @@ Page({
   },
 
   toggleFixed(e) {
-    this.setData({ 'newTask.isFixed': e.detail.value });
+    const isFixed = e.detail.value;
+    const update = { 'newTask.isFixed': isFixed };
+    
+    // 当切换为非固定任务时，清理固定任务相关字段
+    if (!isFixed) {
+      update['newTask.startTime'] = '';
+      update['newTask.endTime'] = '';
+      update['newTask.repeatRule'] = null;
+      this.setData({
+        ...update,
+        rawStartTime: '',
+        rawEndTime: ''
+      });
+    } else {
+      this.setData(update);
+    }
   },
 
   onStartTimeInput(e) {

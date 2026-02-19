@@ -128,7 +128,7 @@ Page({
   },
 
   saveTemplate() {
-    const { rawFormStart, rawFormEnd, formLabel, editingId } = this.data;
+    const { rawFormStart, rawFormEnd, formLabel, editingId, templates } = this.data;
     
     const normalizedStart = normalizeTimeInput(rawFormStart);
     const normalizedEnd = normalizeTimeInput(rawFormEnd);
@@ -138,8 +138,28 @@ Page({
       return;
     }
     
-    if (timeToMinutes(normalizedEnd) <= timeToMinutes(normalizedStart)) {
+    const newStartMin = timeToMinutes(normalizedStart);
+    const newEndMin = timeToMinutes(normalizedEnd);
+    
+    if (newEndMin <= newStartMin) {
       wx.showToast({ title: '结束时间要晚于开始时间', icon: 'none' });
+      return;
+    }
+    
+    // 检查时间重叠
+    const hasOverlap = templates.some(tmpl => {
+      // 编辑时跳过自己
+      if (editingId && tmpl.id === editingId) return false;
+      
+      const tmplStartMin = timeToMinutes(tmpl.start);
+      const tmplEndMin = timeToMinutes(tmpl.end);
+      
+      // 检查是否重叠: (newStart < tmplEnd) && (newEnd > tmplStart)
+      return newStartMin < tmplEndMin && newEndMin > tmplStartMin;
+    });
+    
+    if (hasOverlap) {
+      wx.showToast({ title: '该时间段与其他模板重叠', icon: 'none', duration: 2000 });
       return;
     }
     
