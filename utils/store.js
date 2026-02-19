@@ -4,6 +4,8 @@ const STORAGE_KEYS = {
   TIME_TEMPLATES: 'ocp_time_templates'
 };
 
+const MOCK_PREFIX = 'e2e_mock_';
+
 const { timeToMinutes, minutesToTime } = require('./scheduler');
 
 // Counter for unique ID generation
@@ -14,8 +16,19 @@ class Store {
   generateId() {
     return Date.now().toString() + (++idCounter).toString(36) + Math.random().toString(36).substr(2, 5);
   }
+
+  // Check if mock mode is enabled
+  isMockMode() {
+    return wx.getStorageSync(MOCK_PREFIX + 'enabled') === true;
+  }
+
+  // Get storage key with mock prefix if in mock mode
+  getKey(key) {
+    return this.isMockMode() ? MOCK_PREFIX + key : key;
+  }
+  
   getTasks() {
-    const tasks = wx.getStorageSync(STORAGE_KEYS.TASKS) || [];
+    const tasks = wx.getStorageSync(this.getKey(STORAGE_KEYS.TASKS)) || [];
     
     return tasks.map(t => {
       const priority = t.priority === 'medium' ? 'mid' : (t.priority || 'mid');
@@ -47,7 +60,7 @@ class Store {
 
   saveTasks(tasks) {
     try {
-      wx.setStorageSync(STORAGE_KEYS.TASKS, tasks);
+      wx.setStorageSync(this.getKey(STORAGE_KEYS.TASKS), tasks);
       return true;
     } catch (error) {
       console.error('保存任务失败:', error);
@@ -57,12 +70,12 @@ class Store {
   }
 
   getDayStates() {
-    return wx.getStorageSync(STORAGE_KEYS.DAY_STATES) || {};
+    return wx.getStorageSync(this.getKey(STORAGE_KEYS.DAY_STATES)) || {};
   }
 
   saveDayStates(dayStates) {
     try {
-      wx.setStorageSync(STORAGE_KEYS.DAY_STATES, dayStates);
+      wx.setStorageSync(this.getKey(STORAGE_KEYS.DAY_STATES), dayStates);
       return true;
     } catch (error) {
       console.error('保存日期状态失败:', error);
@@ -118,12 +131,12 @@ class Store {
   }
 
   getTimeTemplates() {
-    return wx.getStorageSync(STORAGE_KEYS.TIME_TEMPLATES) || [];
+    return wx.getStorageSync(this.getKey(STORAGE_KEYS.TIME_TEMPLATES)) || [];
   }
 
   saveTimeTemplates(templates) {
     try {
-      wx.setStorageSync(STORAGE_KEYS.TIME_TEMPLATES, templates);
+      wx.setStorageSync(this.getKey(STORAGE_KEYS.TIME_TEMPLATES), templates);
       return true;
     } catch (error) {
       console.error('保存时间模板失败:', error);
