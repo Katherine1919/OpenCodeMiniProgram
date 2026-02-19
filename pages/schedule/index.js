@@ -292,5 +292,5 @@ Page({
     } else {
       wx.showToast({ title: '排程已生成', icon: 'success', duration: 2000 });
     }
-  }
+  }, 500),
 });
